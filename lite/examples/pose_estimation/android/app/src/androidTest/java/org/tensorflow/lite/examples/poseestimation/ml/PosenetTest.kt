@@ -50,7 +50,7 @@ class PosenetTest {
     @Test
     fun testPoseEstimationResultWithImage1() {
         val input = EvaluationUtils.loadBitmapAssetByName(TEST_INPUT_IMAGE1)
-        val person = poseDetector.estimatePoses(input)[0]
+        val person = poseDetector.inferenceImage(input)[0]
         EvaluationUtils.assertPoseDetectionResult(
             person,
             expectedDetectionResult[0],
@@ -61,7 +61,7 @@ class PosenetTest {
     @Test
     fun testPoseEstimationResultWithImage2() {
         val input = EvaluationUtils.loadBitmapAssetByName(TEST_INPUT_IMAGE2)
-        val person = poseDetector.estimatePoses(input)[0]
+        val person = poseDetector.inferenceImage(input)[0]
         EvaluationUtils.assertPoseDetectionResult(
             person,
             expectedDetectionResult[1],

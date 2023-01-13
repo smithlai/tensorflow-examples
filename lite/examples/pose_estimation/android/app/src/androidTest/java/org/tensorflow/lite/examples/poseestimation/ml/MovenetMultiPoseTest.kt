@@ -60,7 +60,7 @@ class MovenetMultiPoseTest {
 
     @Test
     fun testPoseEstimateResult() {
-        val persons = poseDetector.estimatePoses(inputFinal)
+        val persons = poseDetector.inferenceImage(inputFinal)
         assert(persons.size == 2)
 
         // Sort the results so that the person on the right side come first.

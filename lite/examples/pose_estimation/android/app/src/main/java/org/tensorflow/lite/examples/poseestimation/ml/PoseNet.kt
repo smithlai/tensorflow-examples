@@ -37,7 +37,7 @@ import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
 import kotlin.math.exp
 
 class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: GpuDelegate?) :
-    PoseDetector {
+    PoseDetector(interpreter, gpuDelegate) {
 
     companion object {
         private const val CPU_NUM_THREADS = 4
@@ -47,18 +47,10 @@ class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
         private const val MODEL_FILENAME = "posenet.tflite"
 
         fun create(context: Context, device: Device): PoseNet {
-            val options = Interpreter.Options()
-            var gpuDelegate: GpuDelegate? = null
-            options.setNumThreads(CPU_NUM_THREADS)
-            when (device) {
-                Device.CPU -> {
-                }
-                Device.GPU -> {
-                    gpuDelegate = GpuDelegate()
-                    options.addDelegate(gpuDelegate)
-                }
-                Device.NNAPI -> options.setUseNNAPI(true)
-            }
+            val settings: Pair<Interpreter.Options, GpuDelegate?> = getOption(device)
+            val options = settings.first
+            var gpuDelegate = settings.second
+
             return PoseNet(
                 Interpreter(
                     FileUtil.loadMappedFile(
@@ -79,7 +71,7 @@ class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
     private var cropSize = 0
 
     @Suppress("UNCHECKED_CAST")
-    override fun estimatePoses(bitmap: Bitmap): List<Person> {
+    override fun inferenceImage(bitmap: Bitmap): List<Person> {
         val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val inputArray = arrayOf(processInputImage(bitmap).tensorBuffer.buffer)
         Log.i(
@@ -184,11 +176,6 @@ class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
     }
 
     override fun lastInferenceTimeNanos(): Long = lastInferenceTimeNanos
-
-    override fun close() {
-        gpuDelegate?.close()
-        interpreter.close()
-    }
 
     /**
      * Scale and crop the input image to a TensorImage.

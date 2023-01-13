@@ -39,7 +39,7 @@ enum class ModelType {
 }
 
 class MoveNet(private val interpreter: Interpreter, private var gpuDelegate: GpuDelegate?) :
-    PoseDetector {
+    PoseDetector(interpreter, gpuDelegate) {
 
     companion object {
         private const val MIN_CROP_KEYPOINT_SCORE = .2f
@@ -56,18 +56,10 @@ class MoveNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
 
         // allow specifying model type.
         fun create(context: Context, device: Device, modelType: ModelType): MoveNet {
-            val options = Interpreter.Options()
-            var gpuDelegate: GpuDelegate? = null
-            options.setNumThreads(CPU_NUM_THREADS)
-            when (device) {
-                Device.CPU -> {
-                }
-                Device.GPU -> {
-                    gpuDelegate = GpuDelegate()
-                    options.addDelegate(gpuDelegate)
-                }
-                Device.NNAPI -> options.setUseNNAPI(true)
-            }
+            val settings: Pair<Interpreter.Options, GpuDelegate?> = getOption(device)
+            val options = settings.first
+            var gpuDelegate = settings.second
+
             return MoveNet(
                 Interpreter(
                     FileUtil.loadMappedFile(
@@ -91,7 +83,7 @@ class MoveNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
     private val inputHeight = interpreter.getInputTensor(0).shape()[2]
     private var outputShape: IntArray = interpreter.getOutputTensor(0).shape()
 
-    override fun estimatePoses(bitmap: Bitmap): List<Person> {
+    override fun inferenceImage(bitmap: Bitmap): List<Person> {
         val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         if (cropRegion == null) {
             cropRegion = initRectF(bitmap.width, bitmap.height)
@@ -172,8 +164,7 @@ class MoveNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
     override fun lastInferenceTimeNanos(): Long = lastInferenceTimeNanos
 
     override fun close() {
-        gpuDelegate?.close()
-        interpreter.close()
+        super.close()
         cropRegion = null
     }
 

@@ -18,11 +18,14 @@ package org.tensorflow.lite.examples.poseestimation.ml
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.PointF
+import android.graphics.Rect
 import android.os.SystemClock
 import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.examples.poseestimation.VisualizationUtils
 import org.tensorflow.lite.examples.poseestimation.data.BodyPart
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.KeyPoint
@@ -33,14 +36,13 @@ import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
+import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
 import kotlin.math.exp
 
 class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDelegate: GpuDelegate?) :
-    PoseDetector {
+    PoseDetector(interpreter, gpuDelegate) {
 
     companion object {
-        private const val FACENET_INPUT = 192
-        private const val CPU_NUM_THREADS = 4
         private const val MEAN = 127.5f
         private const val STD = 127.5f
         private const val TAG = "FaceMesh"
@@ -48,18 +50,10 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
         private const val MODEL_FILENAME = "face_landmark.tflite"
 
         fun create(context: Context, device: Device): FaceMeshDetector {
-            val options = Interpreter.Options()
-            var gpuDelegate: GpuDelegate? = null
-            options.setNumThreads(CPU_NUM_THREADS)
-            when (device) {
-                Device.CPU -> {
-                }
-                Device.GPU -> {
-                    gpuDelegate = GpuDelegate()
-                    options.addDelegate(gpuDelegate)
-                }
-                Device.NNAPI -> options.setUseNNAPI(true)
-            }
+            val settings: Pair<Interpreter.Options, GpuDelegate?> = getOption(device)
+            val options = settings.first
+            var gpuDelegate = settings.second
+
             return FaceMeshDetector(
                 Interpreter(
                     FileUtil.loadMappedFile(
@@ -80,7 +74,7 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
     private var cropSize = 0
 
     @Suppress("UNCHECKED_CAST")
-    override fun estimatePoses(bitmap: Bitmap): List<Person> {
+    override fun inferenceImage(bitmap: Bitmap): List<Person> {
         val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val inputArray = arrayOf(processInputImage(bitmap).tensorBuffer.buffer)
         Log.i(
@@ -164,10 +158,6 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
 
     override fun lastInferenceTimeNanos(): Long = lastInferenceTimeNanos
 
-    override fun close() {
-        gpuDelegate?.close()
-        interpreter.close()
-    }
 
     /**
      * Scale and crop the input image to a TensorImage.
@@ -183,9 +173,9 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
             cropWidth = (bitmap.height - bitmap.width).toFloat()
             bitmap.height
         }
-        Log.e("aaaaa", inputWidth.toString() + " " + inputHeight.toString())
+//        Log.e("aaaaa", inputWidth.toString() + " " + inputHeight.toString())
         val imageProcessor = ImageProcessor.Builder().apply {
-//            add(ResizeWithCropOrPadOp(cropSize, cropSize))
+            add(ResizeWithCropOrPadOp(cropSize, cropSize))
             add(ResizeOp(inputWidth, inputHeight, ResizeOp.ResizeMethod.BILINEAR))
             add(NormalizeOp(MEAN, STD))
         }.build()
@@ -203,7 +193,7 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
         // 1 * 1 * 1 * 1404 contains heatmaps
 
         val coordinations_shape = interpreter.getOutputTensor(0).shape()
-        Log.e("aaaa1", coordinations_shape[0].toString()+","+coordinations_shape[1]+","+coordinations_shape[2]+","+coordinations_shape[3])
+
         outputMap[0] = Array(coordinations_shape[0]) {
             Array(coordinations_shape[1]) {
                 Array(coordinations_shape[2]) {
@@ -214,7 +204,6 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
 
         // 1 * 1 * 1 * 1 contains offsets
         val offest_shape = interpreter.getOutputTensor(1).shape()
-        Log.e("aaaa1", offest_shape[0].toString()+","+offest_shape[1]+","+offest_shape[2]+","+offest_shape[3])
         outputMap[1] = Array(offest_shape[0]) {
             Array(offest_shape[1]) {
                 Array(offest_shape[2]) {
@@ -225,8 +214,40 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
         return outputMap
     }
 
-    /** Returns value within [0,1].   */
-    private fun sigmoid(x: Float): Float {
-        return (1.0f / (1.0f + exp(-x)))
+    override fun visualize(overlay: Canvas, bitmap: Bitmap, persons: List<Person> ) {
+        val outputBitmap = VisualizationUtils.drawBodyKeypoints(
+            bitmap,
+            persons.filter { it.score > 0.2 }, true
+        )
+
+        overlay?.let { canvas ->
+            val screenWidth: Int
+            val screenHeight: Int
+            val left: Int
+            val top: Int
+
+            if (canvas.height > canvas.width) {
+                val ratio = outputBitmap.height.toFloat() / outputBitmap.width
+                screenWidth = canvas.width
+                left = 0
+                screenHeight = (canvas.width * ratio).toInt()
+                top = (canvas.height - screenHeight) / 2
+            } else {
+                val ratio = outputBitmap.width.toFloat() / outputBitmap.height
+                screenHeight = canvas.height
+                top = 0
+                screenWidth = (canvas.height * ratio).toInt()
+                left = (canvas.width - screenWidth) / 2
+            }
+            val right: Int = left + screenWidth
+            val bottom: Int = top + screenHeight
+
+            canvas.drawBitmap(
+                outputBitmap, Rect(0, 0, outputBitmap.width, outputBitmap.height),
+                Rect(left, top, right, bottom), null
+            )
+        }
     }
+
+
 }

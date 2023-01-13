@@ -53,10 +53,10 @@ class MovenetLightningTest {
 
         // As Movenet use previous frame to optimize detection result, we run it multiple times
         // using the same image to improve result.
-        poseDetector.estimatePoses(input)
-        poseDetector.estimatePoses(input)
-        poseDetector.estimatePoses(input)
-        val person = poseDetector.estimatePoses(input)[0]
+        poseDetector.inferenceImage(input)
+        poseDetector.inferenceImage(input)
+        poseDetector.inferenceImage(input)
+        val person = poseDetector.inferenceImage(input)[0]
         EvaluationUtils.assertPoseDetectionResult(
             person,
             expectedDetectionResult[0],
@@ -70,10 +70,10 @@ class MovenetLightningTest {
 
         // As Movenet use previous frame to optimize detection result, we run it multiple times
         // using the same image to improve result.
-        poseDetector.estimatePoses(input)
-        poseDetector.estimatePoses(input)
-        poseDetector.estimatePoses(input)
-        val person = poseDetector.estimatePoses(input)[0]
+        poseDetector.inferenceImage(input)
+        poseDetector.inferenceImage(input)
+        poseDetector.inferenceImage(input)
+        val person = poseDetector.inferenceImage(input)[0]
         EvaluationUtils.assertPoseDetectionResult(
             person,
             expectedDetectionResult[1],

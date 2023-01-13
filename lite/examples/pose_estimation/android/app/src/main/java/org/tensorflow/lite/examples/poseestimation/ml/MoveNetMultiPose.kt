@@ -42,7 +42,7 @@ class MoveNetMultiPose(
     private val interpreter: Interpreter,
     private val type: Type,
     private val gpuDelegate: GpuDelegate?,
-) : PoseDetector {
+) : PoseDetector(interpreter, gpuDelegate) {
     private val outputShape = interpreter.getOutputTensor(0).shape()
     private val inputShape = interpreter.getInputTensor(0).shape()
     private var imageWidth: Int = 0
@@ -73,23 +73,10 @@ class MoveNetMultiPose(
             device: Device,
             type: Type,
         ): MoveNetMultiPose {
-            val options = Interpreter.Options()
-            var gpuDelegate: GpuDelegate? = null
-            when (device) {
-                Device.CPU -> {
-                    options.setNumThreads(CPU_NUM_THREADS)
-                }
-                Device.GPU -> {
-                    // only fixed model support Gpu delegate option.
-                    if (type == Type.Fixed) {
-                        gpuDelegate = GpuDelegate()
-                        options.addDelegate(gpuDelegate)
-                    }
-                }
-                else -> {
-                    // nothing to do
-                }
-            }
+            val settings: Pair<Interpreter.Options, GpuDelegate?> = getOption(device)
+            val options = settings.first
+            var gpuDelegate = settings.second
+
             return MoveNetMultiPose(
                 Interpreter(
                     FileUtil.loadMappedFile(
@@ -269,7 +256,7 @@ class MoveNetMultiPose(
     /**
      * Run TFlite model and Returns a list of "Person" corresponding to the input image.
      */
-    override fun estimatePoses(bitmap: Bitmap): List<Person> {
+    override fun inferenceImage(bitmap: Bitmap): List<Person> {
         val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val inputTensor = processInputTensor(bitmap)
         val outputTensor = TensorBuffer.createFixedSize(outputShape, DataType.FLOAT32)
@@ -294,8 +281,7 @@ class MoveNetMultiPose(
      * Close all resources when not in use.
      */
     override fun close() {
-        gpuDelegate?.close()
-        interpreter.close()
+        super.close()
         tracker = null
     }
 }

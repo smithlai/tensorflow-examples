@@ -52,15 +52,11 @@ class CameraSource(
     companion object {
         private const val PREVIEW_WIDTH = 640
         private const val PREVIEW_HEIGHT = 480
-
-        /** Threshold for confidence score. */
-        private const val MIN_CONFIDENCE = .2f
         private const val TAG = "Camera Source"
     }
 
     private val lock = Any()
     private var detector: PoseDetector? = null
-    private var classifier: PoseClassifier? = null
     private var isTrackerEnabled = false
     private var yuvConverter: YuvToRgbConverter = YuvToRgbConverter(surfaceView.context)
     private lateinit var imageBitmap: Bitmap
@@ -189,11 +185,7 @@ class CameraSource(
 
     fun setClassifier(classifier: PoseClassifier?) {
         synchronized(lock) {
-            if (this.classifier != null) {
-                this.classifier?.close()
-                this.classifier = null
-            }
-            this.classifier = classifier
+            detector?.setClassifier(classifier)
         }
     }
 
@@ -231,8 +223,6 @@ class CameraSource(
         stopImageReaderThread()
         detector?.close()
         detector = null
-        classifier?.close()
-        classifier = null
         fpsTimer?.cancel()
         fpsTimer = null
         frameProcessedInOneSecondInterval = 0
@@ -241,20 +231,21 @@ class CameraSource(
 
     // process image
     private fun processImage(bitmap: Bitmap) {
+        //task1 value
         val persons = mutableListOf<Person>()
         var classificationResult: List<Pair<String, Float>>? = null
 
         synchronized(lock) {
-            detector?.estimatePoses(bitmap)?.let {
+            // todo: make this as task1
+            detector?.inferenceImage(bitmap)?.let {
                 persons.addAll(it)
-
                 // if the model only returns one item, allow running the Pose classifier.
                 if (persons.isNotEmpty()) {
-                    classifier?.run {
-                        classificationResult = classify(persons[0])
-                    }
+                        classificationResult = detector?.classifier?.classify(persons[0])
                 }
             }
+            // todo: make this a task2
+            // ................
         }
         frameProcessedInOneSecondInterval++
         if (frameProcessedInOneSecondInterval == 1) {
@@ -263,47 +254,15 @@ class CameraSource(
         }
 
         // if the model returns only one item, show that item's score.
-        if (persons.isNotEmpty()) {
-            listener?.onDetectedInfo(persons[0].score, classificationResult)
-        }
-        visualize(persons, bitmap)
-    }
-
-    private fun visualize(persons: List<Person>, bitmap: Bitmap) {
-
-        val outputBitmap = VisualizationUtils.drawBodyKeypoints(
-            bitmap,
-            persons.filter { it.score > MIN_CONFIDENCE }, isTrackerEnabled
-        )
-
         val holder = surfaceView.holder
         val surfaceCanvas = holder.lockCanvas()
         surfaceCanvas?.let { canvas ->
-            val screenWidth: Int
-            val screenHeight: Int
-            val left: Int
-            val top: Int
-
-            if (canvas.height > canvas.width) {
-                val ratio = outputBitmap.height.toFloat() / outputBitmap.width
-                screenWidth = canvas.width
-                left = 0
-                screenHeight = (canvas.width * ratio).toInt()
-                top = (canvas.height - screenHeight) / 2
-            } else {
-                val ratio = outputBitmap.width.toFloat() / outputBitmap.height
-                screenHeight = canvas.height
-                top = 0
-                screenWidth = (canvas.height * ratio).toInt()
-                left = (canvas.width - screenWidth) / 2
+            persons?.let {
+                detector?.visualize(canvas,bitmap, it)
+                if (it.isNotEmpty()) {
+                    listener?.onDetectedInfo(it[0].score, classificationResult)
+                }
             }
-            val right: Int = left + screenWidth
-            val bottom: Int = top + screenHeight
-
-            canvas.drawBitmap(
-                outputBitmap, Rect(0, 0, outputBitmap.width, outputBitmap.height),
-                Rect(left, top, right, bottom), null
-            )
             surfaceView.holder.unlockCanvasAndPost(canvas)
         }
     }

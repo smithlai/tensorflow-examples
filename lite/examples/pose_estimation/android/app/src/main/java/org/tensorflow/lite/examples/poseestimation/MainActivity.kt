@@ -337,6 +337,12 @@ class MainActivity : AppCompatActivity() {
                 showTracker(false)
                 PoseNet.create(this, device)
             }
+            4->{
+                showPoseClassifier(false)
+                showDetectionScore(false)
+                showTracker(false)
+                FaceMeshDetector.create(this, device)
+            }
             else -> {
                 null
             }

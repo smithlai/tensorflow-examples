@@ -17,19 +17,13 @@ limitations under the License.
 package org.tensorflow.lite.examples.poseestimation.ml
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.PointF
-import android.graphics.Rect
+import android.graphics.*
 import android.os.SystemClock
 import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.examples.poseestimation.VisualizationUtils
-import org.tensorflow.lite.examples.poseestimation.data.BodyPart
 import org.tensorflow.lite.examples.poseestimation.data.Device
-import org.tensorflow.lite.examples.poseestimation.data.KeyPoint
-import org.tensorflow.lite.examples.poseestimation.data.Person
+import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
 import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
@@ -37,10 +31,10 @@ import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
-import kotlin.math.exp
 
-class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDelegate: GpuDelegate?) :
-    PoseDetector(interpreter, gpuDelegate) {
+class FaceMeshDetector(
+    private val interpreter: Interpreter,
+    private var gpuDelegate: GpuDelegate?): AbstractDetector<List<FaceMesh>> {
 
     companion object {
         private const val MEAN = 127.5f
@@ -50,7 +44,7 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
         private const val MODEL_FILENAME = "face_landmark.tflite"
 
         fun create(context: Context, device: Device): FaceMeshDetector {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = getOption(device)
+            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
             val options = settings.first
             var gpuDelegate = settings.second
 
@@ -72,9 +66,9 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
     private var cropHeight = 0f
     private var cropWidth = 0f
     private var cropSize = 0
-
+    private val visualizationUtils:VisualizationUtils = VisualizationUtils()
     @Suppress("UNCHECKED_CAST")
-    override fun inferenceImage(bitmap: Bitmap): List<Person> {
+    override fun inferenceImage(bitmap: Bitmap): List<FaceMesh> {
         val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val inputArray = arrayOf(processInputImage(bitmap).tensorBuffer.buffer)
         Log.i(
@@ -99,7 +93,7 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
         val offsets = outputMap[1] as Array<Array<Array<FloatArray>>>
 
         val postProcessingStartTimeNanos = SystemClock.elapsedRealtimeNanos()
-        val person = postProcessModelOuputs(bitmap, coordinates, offsets)
+        val facemeshes = postProcessModelOuputs(bitmap, coordinates, offsets)
         Log.i(
             TAG,
             String.format(
@@ -108,7 +102,7 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
             )
         )
 
-        return listOf(person)
+        return facemeshes
     }
 
     /**
@@ -116,48 +110,43 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
      */
     private fun postProcessModelOuputs(
         bitmap: Bitmap,
-        heatmaps: Array<Array<Array<FloatArray>>>,
+        pos_buffer: Array<Array<Array<FloatArray>>>,
         offsets: Array<Array<Array<FloatArray>>>
-    ): Person {
+    ): List<FaceMesh> {
         // 1 * 1 * 1 * 1404
-        val numKeypoints = heatmaps[0][0][0].size  / 3
-        val dataKeypoints = heatmaps[0][0][0]
+        val numKeypoints = pos_buffer[0][0][0].size  / 3
+        val pos_buffer_p = pos_buffer[0][0][0]
 
         // Finds the (x, y, z)
         val keypointPositions = Array(numKeypoints) { Triple(0.0f, 0.0f, 0.0f) }
         for (keypoint in 0 until numKeypoints) {
             val base = keypoint*3
-            keypointPositions[keypoint] = Triple(dataKeypoints[base], dataKeypoints[base+1],dataKeypoints[base+2])
+            keypointPositions[keypoint] = Triple(pos_buffer_p[base], pos_buffer_p[base+1],pos_buffer_p[base+2])
         }
 
         // Calculating the x and y coordinates of the keypoints with offset adjustment.
+        val keypointPositions2 = Array(numKeypoints) { Triple(0f, 0f, 0f) }
         keypointPositions.forEachIndexed { idx, position ->
             val positionX = position.first
             val positionY = position.second
             val positionZ = position.third
 
-            val inputImageCoordinateX = positionX*bitmap.width / inputWidth.toFloat()
-            val inputImageCoordinateY = positionY*bitmap.height / inputHeight.toFloat()
-            val inputImageCoordinateZ = positionZ
-            keypointPositions[idx] = Triple(inputImageCoordinateX,inputImageCoordinateY, inputImageCoordinateZ)
+            val inputImageCoordinateX = (positionX*bitmap.width / inputWidth).toFloat()
+            val inputImageCoordinateY = (positionY*bitmap.height / inputHeight).toFloat()
+            val inputImageCoordinateZ = positionZ.toFloat()
+            keypointPositions2[idx] = Triple(inputImageCoordinateX,inputImageCoordinateY, inputImageCoordinateZ)
 //            Log.e("aaaaa", keypointPositions[idx].toString())
         }
 
-        val keypointList = mutableListOf<KeyPoint>()
-        enumValues<BodyPart>().forEachIndexed { idx, it ->
-            keypointList.add(
-                KeyPoint(
-                    it,
-                    PointF(keypointPositions[idx].first, keypointPositions[idx].second),
-                    100f
-                )
-            )
-        }
-        return Person(keyPoints = keypointList.toList(), score = 100.0f)
+
+        return listOf(FaceMesh(keypoints = keypointPositions2.toList()))
     }
 
     override fun lastInferenceTimeNanos(): Long = lastInferenceTimeNanos
-
+    override fun close() {
+        gpuDelegate?.close()
+        interpreter.close()
+    }
 
     /**
      * Scale and crop the input image to a TensorImage.
@@ -214,11 +203,8 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
         return outputMap
     }
 
-    override fun visualize(overlay: Canvas, bitmap: Bitmap, persons: List<Person> ) {
-        val outputBitmap = VisualizationUtils.drawBodyKeypoints(
-            bitmap,
-            persons.filter { it.score > 0.2 }, true
-        )
+    override fun visualize(overlay: Canvas, bitmap: Bitmap, results: List<FaceMesh> ) {
+        val outputBitmap = visualizationUtils.drawKeypoints(bitmap,results)
 
         overlay?.let { canvas ->
             val screenWidth: Int
@@ -249,5 +235,56 @@ class FaceMeshDetector(private val interpreter: Interpreter, private var gpuDele
         }
     }
 
+    class VisualizationUtils {
+        companion object {
+            /** Radius of circle used to draw keypoints.  */
+            const val CIRCLE_RADIUS = 6f
 
+            /** Width of line used to connected two keypoints.  */
+            const val LINE_WIDTH = 4f
+
+            /** The text size of the person id that will be displayed when the tracker is available.  */
+            private const val PERSON_ID_TEXT_SIZE = 30f
+
+            /** Distance from person id to the nose keypoint.  */
+            const val PERSON_ID_MARGIN = 6f
+        }
+        // Draw line and point indicate body pose
+        fun drawKeypoints(
+            input: Bitmap,
+            results: List<FaceMesh>
+        ): Bitmap {
+            val paintCircle = Paint().apply {
+                strokeWidth = CIRCLE_RADIUS
+                color = Color.RED
+                style = Paint.Style.FILL
+            }
+            val paintLine = Paint().apply {
+                strokeWidth = LINE_WIDTH
+                color = Color.RED
+                style = Paint.Style.STROKE
+            }
+
+            val paintText = Paint().apply {
+                textSize = PERSON_ID_TEXT_SIZE
+                color = Color.BLUE
+                textAlign = Paint.Align.LEFT
+            }
+
+            val output = input.copy(Bitmap.Config.ARGB_8888, true)
+            val originalSizeCanvas = Canvas(output)
+            results.forEach { facemesh ->
+                facemesh.keypoints.forEach{ keypoint->
+//                Log.e("aaaaa", keypoint.toString())
+                    originalSizeCanvas.drawCircle(
+                        keypoint.first,
+                        keypoint.second,
+                        CIRCLE_RADIUS,
+                        paintCircle
+                    )
+                }
+            }
+            return output
+        }
+    }
 }

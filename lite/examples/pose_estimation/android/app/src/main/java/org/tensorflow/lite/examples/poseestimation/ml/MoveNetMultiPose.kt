@@ -73,7 +73,7 @@ class MoveNetMultiPose(
             device: Device,
             type: Type,
         ): MoveNetMultiPose {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = getOption(device)
+            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
             val options = settings.first
             var gpuDelegate = settings.second
 

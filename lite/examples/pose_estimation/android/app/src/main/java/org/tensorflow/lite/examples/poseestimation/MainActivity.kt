@@ -347,8 +347,9 @@ class MainActivity : AppCompatActivity() {
                 null
             }
         }
-        poseDetector?.let { detector ->
-            cameraSource?.setDetector(detector)
+        poseDetector?.let{
+            val ad = it as AbstractDetector<*>
+            cameraSource?.setDetector(ad)
         }
     }
 

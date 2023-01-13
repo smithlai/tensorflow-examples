@@ -18,9 +18,29 @@ package org.tensorflow.lite.examples.poseestimation.ml
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.examples.poseestimation.data.Device
+import org.tensorflow.lite.gpu.GpuDelegate
 
 interface  AbstractDetector<DetectionResultT> : AutoCloseable {
-
+    companion object {
+        protected const val CPU_NUM_THREADS = 4
+        fun getOption(device: Device): Pair<Interpreter.Options, GpuDelegate?>{
+            val options = Interpreter.Options()
+            var gpuDelegate: GpuDelegate? = null
+            options.setNumThreads(CPU_NUM_THREADS)
+            when (device) {
+                Device.CPU -> {
+                }
+                Device.GPU -> {
+                    gpuDelegate = GpuDelegate()
+                    options.addDelegate(gpuDelegate)
+                }
+                Device.NNAPI -> options.setUseNNAPI(true)
+            }
+            return Pair(options, gpuDelegate)
+        }
+    }
     open fun inferenceImage(bitmap: Bitmap): DetectionResultT
     open fun visualize(overlay: Canvas, bitmap: Bitmap, result: DetectionResultT )
     open fun lastInferenceTimeNanos(): Long

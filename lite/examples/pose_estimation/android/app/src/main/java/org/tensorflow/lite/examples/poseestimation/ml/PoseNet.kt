@@ -47,7 +47,7 @@ class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
         private const val MODEL_FILENAME = "posenet.tflite"
 
         fun create(context: Context, device: Device): PoseNet {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = getOption(device)
+            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
             val options = settings.first
             var gpuDelegate = settings.second
 

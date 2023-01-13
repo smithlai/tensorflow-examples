@@ -33,13 +33,10 @@ import android.util.Log
 import android.view.Surface
 import android.view.SurfaceView
 import kotlinx.coroutines.suspendCancellableCoroutine
-import org.tensorflow.lite.examples.poseestimation.VisualizationUtils
 import org.tensorflow.lite.examples.poseestimation.YuvToRgbConverter
+import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
 import org.tensorflow.lite.examples.poseestimation.data.Person
-import org.tensorflow.lite.examples.poseestimation.ml.MoveNetMultiPose
-import org.tensorflow.lite.examples.poseestimation.ml.PoseClassifier
-import org.tensorflow.lite.examples.poseestimation.ml.PoseDetector
-import org.tensorflow.lite.examples.poseestimation.ml.TrackerType
+import org.tensorflow.lite.examples.poseestimation.ml.*
 import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -56,7 +53,7 @@ class CameraSource(
     }
 
     private val lock = Any()
-    private var detector: PoseDetector? = null
+    private var detector: AbstractDetector<*>? = null
     private var isTrackerEnabled = false
     private var yuvConverter: YuvToRgbConverter = YuvToRgbConverter(surfaceView.context)
     private lateinit var imageBitmap: Bitmap
@@ -173,7 +170,7 @@ class CameraSource(
         }
     }
 
-    fun setDetector(detector: PoseDetector) {
+    fun setDetector(detector: AbstractDetector<*>) {
         synchronized(lock) {
             if (this.detector != null) {
                 this.detector?.close()
@@ -185,7 +182,11 @@ class CameraSource(
 
     fun setClassifier(classifier: PoseClassifier?) {
         synchronized(lock) {
-            detector?.setClassifier(classifier)
+            detector?.let {
+                if (it is PoseDetector) {
+                    (it as PoseDetector)?.setClassifier(classifier)
+                }
+            }
         }
     }
 
@@ -235,17 +236,37 @@ class CameraSource(
         val persons = mutableListOf<Person>()
         var classificationResult: List<Pair<String, Float>>? = null
 
+        var faceMeshes = mutableListOf<FaceMesh>()
+
         synchronized(lock) {
-            // todo: make this as task1
-            detector?.inferenceImage(bitmap)?.let {
-                persons.addAll(it)
-                // if the model only returns one item, allow running the Pose classifier.
-                if (persons.isNotEmpty()) {
-                        classificationResult = detector?.classifier?.classify(persons[0])
+            detector?.let{
+                // todo: make this as task1
+                when (detector){
+                    is PoseDetector -> {
+                        val pd = it as PoseDetector
+                        pd.inferenceImage(bitmap)?.let {
+                            persons.addAll(it as List<Person>)
+                            // if the model only returns one item, allow running the Pose classifier.
+                            if (persons.isNotEmpty()) {
+                                classificationResult = pd.classifier?.classify(persons[0])
+                            }
+                        }
+                    }
+                    // todo: make this a task2
+                    // ................
+                    is FaceMeshDetector ->{
+                        val pd = it as FaceMeshDetector
+                        pd.inferenceImage(bitmap)?.let {
+                            faceMeshes.addAll(it)
+                        }
+                    }
+                    else->{
+
+                    }
                 }
+
+
             }
-            // todo: make this a task2
-            // ................
         }
         frameProcessedInOneSecondInterval++
         if (frameProcessedInOneSecondInterval == 1) {
@@ -257,12 +278,25 @@ class CameraSource(
         val holder = surfaceView.holder
         val surfaceCanvas = holder.lockCanvas()
         surfaceCanvas?.let { canvas ->
-            persons?.let {
-                detector?.visualize(canvas,bitmap, it)
-                if (it.isNotEmpty()) {
-                    listener?.onDetectedInfo(it[0].score, classificationResult)
+            when (detector){
+                is PoseDetector ->{
+                    persons?.let {
+                        (detector as? PoseDetector)?.visualize(canvas,bitmap, it)
+                        if (it.isNotEmpty()) {
+                            listener?.onDetectedInfo(it[0].score, classificationResult)
+                        }
+                    }
+                }
+                is FaceMeshDetector ->{
+                    faceMeshes?.let {
+                        (detector as? FaceMeshDetector)?.visualize(canvas,bitmap, it)
+                    }
+                }
+                else->{
+
                 }
             }
+
             surfaceView.holder.unlockCanvasAndPost(canvas)
         }
     }

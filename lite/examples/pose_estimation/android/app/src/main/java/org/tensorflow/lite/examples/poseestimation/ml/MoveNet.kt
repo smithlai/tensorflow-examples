@@ -56,7 +56,7 @@ class MoveNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
 
         // allow specifying model type.
         fun create(context: Context, device: Device, modelType: ModelType): MoveNet {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = getOption(device)
+            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
             val options = settings.first
             var gpuDelegate = settings.second
 

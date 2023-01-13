@@ -52,7 +52,7 @@ class VisualizationTest {
     fun testPosenet() {
         val poseDetector = PoseNet.create(appContext, Device.CPU)
         val person = poseDetector.inferenceImage(inputBitmap)[0]
-        val outputBitmap = VisualizationUtils.drawBodyKeypoints(inputBitmap, arrayListOf(person))
+        val outputBitmap = poseDetector.visualizationUtils.drawBodyKeypoints(inputBitmap, arrayListOf(person))
         assertThat(outputBitmap).isNotNull()
     }
 
@@ -64,7 +64,7 @@ class VisualizationTest {
         poseDetector.inferenceImage(inputBitmap)
         poseDetector.inferenceImage(inputBitmap)
         val person2 = poseDetector.inferenceImage(inputBitmap)[0]
-        val outputBitmap2 = VisualizationUtils.drawBodyKeypoints(inputBitmap, arrayListOf(person2))
+        val outputBitmap2 = poseDetector.visualizationUtils.drawBodyKeypoints(inputBitmap, arrayListOf(person2))
         assertThat(outputBitmap2).isNotNull()
     }
 
@@ -76,7 +76,7 @@ class VisualizationTest {
         poseDetector.inferenceImage(inputBitmap)
         poseDetector.inferenceImage(inputBitmap)
         val person = poseDetector.inferenceImage(inputBitmap)[0]
-        val outputBitmap = VisualizationUtils.drawBodyKeypoints(inputBitmap, arrayListOf(person))
+        val outputBitmap = poseDetector.visualizationUtils.drawBodyKeypoints(inputBitmap, arrayListOf(person))
         assertThat(outputBitmap).isNotNull()
     }
 }

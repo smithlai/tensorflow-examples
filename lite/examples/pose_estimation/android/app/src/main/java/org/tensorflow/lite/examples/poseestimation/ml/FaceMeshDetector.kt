@@ -31,6 +31,7 @@ import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
+import kotlin.math.exp
 
 class FaceMeshDetector(
     private val interpreter: Interpreter,
@@ -39,9 +40,11 @@ class FaceMeshDetector(
     companion object {
         private const val MEAN = 127.5f
         private const val STD = 127.5f
+        private const val THRESHOLD = 0.99f
         private const val TAG = "FaceMesh"
 //        https://google.github.io/mediapipe/solutions/models.html#face-mesh
         private const val MODEL_FILENAME = "face_landmark.tflite"
+//        private const val MODEL_FILENAME = "face_landmark_with_attention.tflite"
 
         fun create(context: Context, device: Device): FaceMeshDetector {
             val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
@@ -89,11 +92,11 @@ class FaceMeshDetector(
             String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
         )
 
-        val coordinates = outputMap[0] as Array<Array<Array<FloatArray>>>
-        val offsets = outputMap[1] as Array<Array<Array<FloatArray>>>
+        val landmark_buffer = outputMap[0] as Array<Array<Array<FloatArray>>>
+        val faceflag_buffer = outputMap[1] as Array<Array<Array<FloatArray>>>
 
         val postProcessingStartTimeNanos = SystemClock.elapsedRealtimeNanos()
-        val facemeshes = postProcessModelOuputs(bitmap, coordinates, offsets)
+        val facemeshes = postProcessModelOuputs(bitmap, landmark_buffer, faceflag_buffer)
         Log.i(
             TAG,
             String.format(
@@ -110,12 +113,12 @@ class FaceMeshDetector(
      */
     private fun postProcessModelOuputs(
         bitmap: Bitmap,
-        pos_buffer: Array<Array<Array<FloatArray>>>,
-        offsets: Array<Array<Array<FloatArray>>>
+        landmark_buffer: Array<Array<Array<FloatArray>>>,
+        faceflag_buffer: Array<Array<Array<FloatArray>>>
     ): List<FaceMesh> {
         // 1 * 1 * 1 * 1404
-        val numKeypoints = pos_buffer[0][0][0].size  / 3
-        val pos_buffer_p = pos_buffer[0][0][0]
+        val numKeypoints = landmark_buffer[0][0][0].size  / 3
+        val pos_buffer_p = landmark_buffer[0][0][0]
 
         // Finds the (x, y, z)
         val keypointPositions = Array(numKeypoints) { Triple(0.0f, 0.0f, 0.0f) }
@@ -137,9 +140,12 @@ class FaceMeshDetector(
             keypointPositions2[idx] = Triple(inputImageCoordinateX,inputImageCoordinateY, inputImageCoordinateZ)
 //            Log.e("aaaaa", keypointPositions[idx].toString())
         }
-
-
-        return listOf(FaceMesh(keypoints = keypointPositions2.toList()))
+        val faceflag = faceflag_buffer[0][0][0][0]
+        val confidence = sigmoid(faceflag)
+        var facelist = mutableListOf<FaceMesh>()
+        if (confidence>= THRESHOLD)
+            facelist.add(FaceMesh(keypoints = keypointPositions2.toList(), confidence = confidence))
+        return facelist.toList()
     }
 
     override fun lastInferenceTimeNanos(): Long = lastInferenceTimeNanos
@@ -164,7 +170,7 @@ class FaceMeshDetector(
         }
 //        Log.e("aaaaa", inputWidth.toString() + " " + inputHeight.toString())
         val imageProcessor = ImageProcessor.Builder().apply {
-            add(ResizeWithCropOrPadOp(cropSize, cropSize))
+//            add(ResizeWithCropOrPadOp(cropSize, cropSize))
             add(ResizeOp(inputWidth, inputHeight, ResizeOp.ResizeMethod.BILINEAR))
             add(NormalizeOp(MEAN, STD))
         }.build()
@@ -234,7 +240,10 @@ class FaceMeshDetector(
             )
         }
     }
-
+    /** Returns value within [0,1].   */
+    private fun sigmoid(x: Float): Float {
+        return (1.0f / (1.0f + exp(-x)))
+    }
     class VisualizationUtils {
         companion object {
             /** Radius of circle used to draw keypoints.  */

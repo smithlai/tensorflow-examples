@@ -186,8 +186,12 @@ class MainActivity : AppCompatActivity() {
             if (cameraSource == null) {
                 cameraSource =
                     CameraSource(surfaceView, object : CameraSource.CameraSourceListener {
-                        override fun onFPSListener(fps: Int) {
-                            tvFPS.text = getString(R.string.tfe_pe_tv_fps, fps)
+                        override fun onFPSListener(fps: Int, inferenceTime:Long?) {
+                            val ms = if (inferenceTime != null) String.format("%.2f", 1.0f * inferenceTime / 1_000_000) else "0"
+                            inferenceTime?.let {
+                                tvFPS.text =  getString(R.string.tfe_pe_tv_fps, fps) + " (inference:" + ms +" ms)"
+                            }
+
                         }
 
                         override fun onDetectedInfo(
@@ -342,6 +346,24 @@ class MainActivity : AppCompatActivity() {
                 showDetectionScore(false)
                 showTracker(false)
                 FaceMeshDetector.create(this, device)
+            }
+            5->{
+                showPoseClassifier(false)
+                showDetectionScore(false)
+                showTracker(false)
+                MobilenetDetector.create(this, device)
+            }
+            6->{
+                showPoseClassifier(false)
+                showDetectionScore(false)
+                showTracker(false)
+                EfficientDetector.create(this, device)
+            }
+            7->{
+                showPoseClassifier(false)
+                showDetectionScore(false)
+                showTracker(false)
+                FaceCropDetector.create(this, device)
             }
             else -> {
                 null

@@ -15,6 +15,9 @@
         <item>Movenet MultiPose</item>
         <item>Posenet</item>
         <item>Face Mesh</item>
+        <item>ObjectDetect</item>
+        <item>EfficientDetect</item>
+<!--        <item>Face Crop</item>-->
     </string-array>
 
     <string-array name="tfe_pe_device_name">

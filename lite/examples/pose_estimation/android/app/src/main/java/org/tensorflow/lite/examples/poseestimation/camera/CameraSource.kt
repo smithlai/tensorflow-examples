@@ -34,6 +34,8 @@ import android.view.Surface
 import android.view.SurfaceView
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.tensorflow.lite.examples.poseestimation.YuvToRgbConverter
+import org.tensorflow.lite.examples.poseestimation.data.DetectedObject
+import org.tensorflow.lite.examples.poseestimation.data.FaceCrop
 import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
 import org.tensorflow.lite.examples.poseestimation.data.Person
 import org.tensorflow.lite.examples.poseestimation.ml.*
@@ -237,6 +239,8 @@ class CameraSource(
         var classificationResult: List<Pair<String, Float>>? = null
 
         var faceMeshes = mutableListOf<FaceMesh>()
+        var facecrops = mutableListOf<FaceCrop>()
+        var detect_objects = mutableListOf<DetectedObject>()
 
         synchronized(lock) {
             detector?.let{
@@ -260,6 +264,24 @@ class CameraSource(
                             faceMeshes.addAll(it)
                         }
                     }
+                    is MobilenetDetector ->{
+                        val pd = it as MobilenetDetector
+                        pd.inferenceImage(bitmap)?.let {
+                            detect_objects.addAll(it)
+                        }
+                    }
+                    is EfficientDetector ->{
+                        val pd = it as EfficientDetector
+                        pd.inferenceImage(bitmap)?.let {
+                            detect_objects.addAll(it)
+                        }
+                    }
+                    is FaceCropDetector ->{
+                        val pd = it as FaceCropDetector
+                        pd.inferenceImage(bitmap)?.let {
+                            facecrops.addAll(it)
+                        }
+                    }
                     else->{
 
                     }
@@ -271,7 +293,7 @@ class CameraSource(
         frameProcessedInOneSecondInterval++
         if (frameProcessedInOneSecondInterval == 1) {
             // send fps to view
-            listener?.onFPSListener(framesPerSecond)
+            listener?.onFPSListener(framesPerSecond, detector?.lastInferenceTimeNanos())
         }
 
         // if the model returns only one item, show that item's score.
@@ -290,6 +312,24 @@ class CameraSource(
                 is FaceMeshDetector ->{
                     faceMeshes?.let {
                         (detector as? FaceMeshDetector)?.visualize(canvas,bitmap, it)
+                    }
+                }
+                is MobilenetDetector ->{
+                    detect_objects?.let {
+                        (detector as? MobilenetDetector)?.visualize(canvas,bitmap, it)
+                    }
+                }
+                is EfficientDetector ->{
+                    detect_objects?.let {
+                        (detector as? EfficientDetector)?.visualize(canvas,bitmap, it)
+                    }
+                }
+                is FaceCropDetector ->{
+                    if (facecrops?.size>0){
+                        Log.e("ccccc", facecrops.toString())
+                    }
+                    facecrops?.let {
+                        (detector as? FaceCropDetector)?.visualize(canvas,bitmap, it)
                     }
                 }
                 else->{
@@ -313,7 +353,7 @@ class CameraSource(
     }
 
     interface CameraSourceListener {
-        fun onFPSListener(fps: Int)
+        fun onFPSListener(fps: Int, inferenceTime:Long?)
 
         fun onDetectedInfo(personScore: Float?, poseLabels: List<Pair<String, Float>>?)
     }

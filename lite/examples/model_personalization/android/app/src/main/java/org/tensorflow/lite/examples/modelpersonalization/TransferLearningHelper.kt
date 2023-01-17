@@ -84,6 +84,9 @@ class TransferLearningHelper(
         return try {
             val modelFile = FileUtil.loadMappedFile(context, "model.tflite")
             interpreter = Interpreter(modelFile, options)
+            val inputSignature = interpreter?.getInputTensor(0)
+            val outputSignature = interpreter?.getOutputTensor(0)
+            Log.e("aaaa", inputSignature?.name()+ " "+ outputSignature?.name())
             true
         } catch (e: IOException) {
             classifierListener?.onError(
@@ -245,7 +248,8 @@ class TransferLearningHelper(
         val inputs: MutableMap<String, Any> = HashMap()
         inputs[LOAD_BOTTLENECK_INPUT_KEY] = image.buffer
         val outputs: MutableMap<String, Any> = HashMap()
-        val bottleneck = Array(1) { FloatArray(BOTTLENECK_SIZE) }
+        val bottleneck = Array(1) { FloatArray(BOTTLENECK_SIZE) } //shape = [1,67720]
+
         outputs[LOAD_BOTTLENECK_OUTPUT_KEY] = bottleneck
         interpreter?.runSignature(inputs, outputs, LOAD_BOTTLENECK_KEY)
         return bottleneck[0]

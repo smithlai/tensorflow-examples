@@ -194,37 +194,11 @@ abstract class ObjectDetector(
         outputMap[3] = FloatArray(numDetections[0])
         return outputMap
     }
-    override fun visualize(overlay: Canvas, bitmap: Bitmap, results: List<DetectedObject> ) {
+    override fun drawKeypoints(bitmap: Bitmap, results: List<DetectedObject> ):Bitmap {
         val outputBitmap = visualizationUtils.drawKeypoints(bitmap,results)
-
-        overlay?.let { canvas ->
-            val screenWidth: Int
-            val screenHeight: Int
-            val left: Int
-            val top: Int
-
-            if (canvas.height > canvas.width) {
-                val ratio = outputBitmap.height.toFloat() / outputBitmap.width
-                screenWidth = canvas.width
-                left = 0
-                screenHeight = (canvas.width * ratio).toInt()
-                top = (canvas.height - screenHeight) / 2
-            } else {
-                val ratio = outputBitmap.width.toFloat() / outputBitmap.height
-                screenHeight = canvas.height
-                top = 0
-                screenWidth = (canvas.height * ratio).toInt()
-                left = (canvas.width - screenWidth) / 2
-            }
-            val right: Int = left + screenWidth
-            val bottom: Int = top + screenHeight
-
-            canvas.drawBitmap(
-                outputBitmap, Rect(0, 0, outputBitmap.width, outputBitmap.height),
-                Rect(left, top, right, bottom), null
-            )
-        }
+        return outputBitmap
     }
+
     /** Returns value within [0,1].   */
     private fun sigmoid(x: Float): Float {
         return (1.0f / (1.0f + exp(-x)))
@@ -250,7 +224,7 @@ abstract class ObjectDetector(
         }
         // Draw line and point indicate body pose
         fun drawKeypoints(
-            input: Bitmap,
+            output: Bitmap,
             results: List<DetectedObject>
         ): Bitmap {
             val paintCircle = Paint().apply {
@@ -269,7 +243,6 @@ abstract class ObjectDetector(
                 color = Color.BLUE
                 textAlign = Paint.Align.LEFT
             }
-            val output = input.copy(Bitmap.Config.ARGB_8888, true)
             val originalSizeCanvas = Canvas(output)
             results.forEach { detected_object ->
                 originalSizeCanvas.drawText(
@@ -306,18 +279,6 @@ abstract class ObjectDetector(
                     detected_object.tl.second,
                     paintLine
                 )
-//                originalSizeCanvas.drawCircle(
-//                    detected_object.tl.first,
-//                    detected_object.tl.second,
-//                    CIRCLE_RADIUS,
-//                    paintCircle
-//                )
-//                originalSizeCanvas.drawCircle(
-//                    detected_object.br.first,
-//                    detected_object.br.second,
-//                    CIRCLE_RADIUS,
-//                    paintCircle
-//                )
             }
             return output
         }

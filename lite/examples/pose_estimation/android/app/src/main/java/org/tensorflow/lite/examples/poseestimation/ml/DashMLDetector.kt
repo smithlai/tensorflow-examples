@@ -89,30 +89,28 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         }
     }
 
-
-    override fun visualize(overlay: Canvas, bitmap: Bitmap, results: DashML ) {
+    override fun drawKeypoints(bitmap: Bitmap, results: DashML ): Bitmap {
+        var tmpbmp = bitmap
         for(detector in detector_list) {
             when (detector) {
                 is ObjectDetector -> {
                     (detector as EfficientDetector).let { _detector ->
                         results.object_list?.let { result_list ->
-                            _detector.visualize(overlay, bitmap, result_list)
+                            tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
                         }
-
                     }
                 }
                 is PoseDetector -> {
                     (detector as PoseDetector).let { _detector ->
                         results.pose_list?.let { result_list ->
-                            _detector.visualize(overlay, bitmap, result_list)
+                            tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
                         }
-
                     }
                 }
                 is FaceMeshDetector -> {
                     (detector as FaceMeshDetector).let { _detector ->
                         results.face_list?.let { result_list ->
-                            _detector.visualize(overlay, bitmap, result_list)
+                            tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
                         }
 
                     }
@@ -122,6 +120,7 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
                 }
             }
         }
+        return tmpbmp
     }
 
 }

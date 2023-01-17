@@ -18,8 +18,10 @@ package org.tensorflow.lite.examples.poseestimation.ml
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Rect
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.Device
+import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
 import org.tensorflow.lite.gpu.GpuDelegate
 
 interface  AbstractDetector<DetectionResultT> : AutoCloseable {
@@ -42,6 +44,41 @@ interface  AbstractDetector<DetectionResultT> : AutoCloseable {
         }
     }
     open fun inferenceImage(bitmap: Bitmap): DetectionResultT
-    open fun visualize(overlay: Canvas, bitmap: Bitmap, result: DetectionResultT )
+    fun visualize(overlay: Canvas, bitmap: Bitmap, result: DetectionResultT ){
+        val output = bitmap.copy(Bitmap.Config.ARGB_8888, true)
+        val bitmap = drawKeypoints(output, result)
+        bitmapToOverlay(overlay, bitmap )
+    }
     open fun lastInferenceTimeNanos(): Long
+
+    open fun drawKeypoints(bitmap: Bitmap, results: DetectionResultT ):Bitmap
+    fun bitmapToOverlay(overlay: Canvas, outputBitmap: Bitmap){
+        overlay?.let { canvas ->
+            val screenWidth: Int
+            val screenHeight: Int
+            val left: Int
+            val top: Int
+
+            if (canvas.height > canvas.width) {
+                val ratio = outputBitmap.height.toFloat() / outputBitmap.width
+                screenWidth = canvas.width
+                left = 0
+                screenHeight = (canvas.width * ratio).toInt()
+                top = (canvas.height - screenHeight) / 2
+            } else {
+                val ratio = outputBitmap.width.toFloat() / outputBitmap.height
+                screenHeight = canvas.height
+                top = 0
+                screenWidth = (canvas.height * ratio).toInt()
+                left = (canvas.width - screenWidth) / 2
+            }
+            val right: Int = left + screenWidth
+            val bottom: Int = top + screenHeight
+
+            canvas.drawBitmap(
+                outputBitmap, Rect(0, 0, outputBitmap.width, outputBitmap.height),
+                Rect(left, top, right, bottom), null
+            )
+        }
+    }
 }

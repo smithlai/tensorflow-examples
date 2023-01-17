@@ -35,44 +35,16 @@ abstract class PoseDetector(
     }
     var classifier: PoseClassifier? = null
         private set
-    val visualizationUtils: VisualizationUtils = VisualizationUtils()
+    public val visualizationUtils: VisualizationUtils = VisualizationUtils()
 //    abstract fun inferenceImage(bitmap: Bitmap): List<Person>
 //    abstract fun lastInferenceTimeNanos(): Long
 
-
-    override fun visualize(overlay: Canvas, bitmap: Bitmap, persons: List<Person> ) {
+    override fun drawKeypoints(bitmap: Bitmap, results: List<Person> ): Bitmap {
         val outputBitmap = visualizationUtils.drawBodyKeypoints(
             bitmap,
-            persons.filter { it.score > MIN_CONFIDENCE }, true
+            results.filter { it.score > MIN_CONFIDENCE }, true
         )
-
-        overlay?.let { canvas ->
-            val screenWidth: Int
-            val screenHeight: Int
-            val left: Int
-            val top: Int
-
-            if (canvas.height > canvas.width) {
-                val ratio = outputBitmap.height.toFloat() / outputBitmap.width
-                screenWidth = canvas.width
-                left = 0
-                screenHeight = (canvas.width * ratio).toInt()
-                top = (canvas.height - screenHeight) / 2
-            } else {
-                val ratio = outputBitmap.width.toFloat() / outputBitmap.height
-                screenHeight = canvas.height
-                top = 0
-                screenWidth = (canvas.height * ratio).toInt()
-                left = (canvas.width - screenWidth) / 2
-            }
-            val right: Int = left + screenWidth
-            val bottom: Int = top + screenHeight
-
-            canvas.drawBitmap(
-                outputBitmap, Rect(0, 0, outputBitmap.width, outputBitmap.height),
-                Rect(left, top, right, bottom), null
-            )
-        }
+        return outputBitmap
     }
 
     override fun close() {
@@ -129,7 +101,7 @@ abstract class PoseDetector(
 
         // Draw line and point indicate body pose
         fun drawBodyKeypoints(
-            input: Bitmap,
+            output: Bitmap,
             persons: List<Person>,
             isTrackerEnabled: Boolean = false
         ): Bitmap {
@@ -149,8 +121,6 @@ abstract class PoseDetector(
                 color = Color.BLUE
                 textAlign = Paint.Align.LEFT
             }
-
-            val output = input.copy(Bitmap.Config.ARGB_8888, true)
             val originalSizeCanvas = Canvas(output)
             persons.forEach { person ->
                 // draw person id if tracker is enable

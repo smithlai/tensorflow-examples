@@ -20,10 +20,7 @@ import android.content.Context
 import android.graphics.*
 import android.os.SystemClock
 import android.util.Log
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.*
@@ -42,9 +39,9 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         private const val TAG = "DashML"
         fun create(context: Context): DashMLDetector {
             val detectors = listOf(
-                MoveNetMultiPose.create(context, Device.CPU,Type.Dynamic),
-                EfficientDetector.create(context, Device.GPU),
-                FaceMeshDetector.create(context, Device.GPU)
+                MoveNet.create(context, Device.CPU,ModelType.Lightning),
+                MobilenetDetector.create(context, Device.CPU),
+                FaceMeshDetector.create(context, Device.CPU)
             )
 
             return DashMLDetector(detectors)
@@ -63,24 +60,47 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         runBlocking {
             val mutableList = mutableListOf<Deferred<*>>()
+            val job = launch {
+                for (detector in detector_list) {
+                    when (detector) {
+                        is EfficientDetector -> {
+                            mutableList.add(async {
+//                                Thread.sleep(300L)
+                                object_list = detector?.inferenceImage(bitmap)
+                                Log.e("aaaaxxxx", object_list?.size.toString())
+                            })
+                        }
+                        is ObjectDetector -> {
+                            mutableList.add(async {
+//                                Thread.sleep(300L)
+                                object_list = detector?.inferenceImage(bitmap)
+                                Log.e("aaaaxxxx", object_list?.size.toString())
+                            })
+                        }
+                        is PoseDetector -> {
+                            mutableList.add(async {
+//                                Thread.sleep(300L)
+                                person_list = detector?.inferenceImage(bitmap)
+                            })
+                        }
+                        is FaceMeshDetector -> {
+                            mutableList.add(async {
+//                                Thread.sleep(300L)
+                                face_list = detector?.inferenceImage(bitmap)
+                            })
+                        }
+                        else -> {
 
-            for(detector in detector_list){
-                when(detector) {
-                    is EfficientDetector -> {
-                        mutableList.add(async { object_list = detector?.inferenceImage(bitmap) })
-                    }
-                    is PoseDetector -> {
-                        mutableList.add(async { person_list = detector?.inferenceImage(bitmap) })
-                    }
-                    is FaceMeshDetector -> {
-                        mutableList.add(async { face_list = detector?.inferenceImage(bitmap) })
-                    }
-                    else ->{
-
+                        }
                     }
                 }
+                mutableList.awaitAll()
+            }
+            job.invokeOnCompletion {
+                println("Completed, duration: ${System.currentTimeMillis() - inferenceStartTimeNanos} ms.")
             }
         }
+
 //        for(detector in detector_list){
 //            when(detector) {
 //                is EfficientDetector -> {
@@ -118,6 +138,13 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         for(detector in detector_list) {
             when (detector) {
                 is EfficientDetector -> {
+                    detector.let { _detector ->
+                        results.object_list?.let { result_list ->
+                            tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
+                        }
+                    }
+                }
+                is ObjectDetector -> {
                     detector.let { _detector ->
                         results.object_list?.let { result_list ->
                             tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)

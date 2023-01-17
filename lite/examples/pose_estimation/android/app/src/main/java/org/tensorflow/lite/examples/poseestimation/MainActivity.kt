@@ -363,6 +363,12 @@ class MainActivity : AppCompatActivity() {
                 showPoseClassifier(false)
                 showDetectionScore(false)
                 showTracker(false)
+                DashMLDetector.create(this)
+            }
+            8->{
+                showPoseClassifier(false)
+                showDetectionScore(false)
+                showTracker(false)
                 FaceCropDetector.create(this, device)
             }
             else -> {

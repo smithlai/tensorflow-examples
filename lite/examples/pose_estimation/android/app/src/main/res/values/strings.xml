@@ -17,6 +17,7 @@
         <item>Face Mesh</item>
         <item>ObjectDetect</item>
         <item>EfficientDetect</item>
+        <item>Dash ML</item>
 <!--        <item>Face Crop</item>-->
     </string-array>
 

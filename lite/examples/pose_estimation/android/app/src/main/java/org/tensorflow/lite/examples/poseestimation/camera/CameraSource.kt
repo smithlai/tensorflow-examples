@@ -34,10 +34,7 @@ import android.view.Surface
 import android.view.SurfaceView
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.tensorflow.lite.examples.poseestimation.YuvToRgbConverter
-import org.tensorflow.lite.examples.poseestimation.data.DetectedObject
-import org.tensorflow.lite.examples.poseestimation.data.FaceCrop
-import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
-import org.tensorflow.lite.examples.poseestimation.data.Person
+import org.tensorflow.lite.examples.poseestimation.data.*
 import org.tensorflow.lite.examples.poseestimation.ml.*
 import java.util.*
 import kotlin.coroutines.resume
@@ -241,6 +238,7 @@ class CameraSource(
         var faceMeshes = mutableListOf<FaceMesh>()
         var facecrops = mutableListOf<FaceCrop>()
         var detect_objects = mutableListOf<DetectedObject>()
+        var dashml_results: DashML? = null
 
         synchronized(lock) {
             detector?.let{
@@ -274,6 +272,12 @@ class CameraSource(
                         val pd = it as EfficientDetector
                         pd.inferenceImage(bitmap)?.let {
                             detect_objects.addAll(it)
+                        }
+                    }
+                    is DashMLDetector ->{
+                        val pd = it as DashMLDetector
+                        pd.inferenceImage(bitmap)?.let {
+                            dashml_results = it
                         }
                     }
                     is FaceCropDetector ->{
@@ -322,6 +326,11 @@ class CameraSource(
                 is EfficientDetector ->{
                     detect_objects?.let {
                         (detector as? EfficientDetector)?.visualize(canvas,bitmap, it)
+                    }
+                }
+                is DashMLDetector ->{
+                    dashml_results?.let {
+                        (detector as? DashMLDetector)?.visualize(canvas,bitmap, it)
                     }
                 }
                 is FaceCropDetector ->{

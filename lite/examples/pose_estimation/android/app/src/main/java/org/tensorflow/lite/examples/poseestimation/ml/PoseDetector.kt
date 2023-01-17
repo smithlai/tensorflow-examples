@@ -31,6 +31,7 @@ abstract class PoseDetector(
     private val interpreter: Interpreter,
     private var gpuDelegate: GpuDelegate?) : AbstractDetector<List<Person>> {
     companion object {
+        const val TAG = "PoseDetector"
         private const val MIN_CONFIDENCE = .2f
     }
     var classifier: PoseClassifier? = null

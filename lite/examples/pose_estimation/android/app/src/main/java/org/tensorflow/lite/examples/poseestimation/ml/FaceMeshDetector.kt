@@ -73,39 +73,44 @@ class FaceMeshDetector(
     private val visualizationUtils:VisualizationUtils = VisualizationUtils()
     @Suppress("UNCHECKED_CAST")
     override fun inferenceImage(bitmap: Bitmap): List<FaceMesh> {
-        val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
+        val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
+//        val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val inputArray = arrayOf(processInputImage(bitmap).tensorBuffer.buffer)
-        Log.i(
-            TAG,
-            String.format(
-                "Scaling to [-1,1] took %.2f ms",
-                (SystemClock.elapsedRealtimeNanos() - estimationStartTimeNanos) / 1_000_000f
-            )
-        )
+//        Log.i(
+//            TAG,
+//            String.format(
+//                "Scaling to [-1,1] took %.2f ms",
+//                (SystemClock.elapsedRealtimeNanos() - estimationStartTimeNanos) / 1_000_000f
+//            )
+//        )
 
         val outputMap = initOutputMap(interpreter)
 
-        val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
+//        val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         interpreter.runForMultipleInputsOutputs(inputArray, outputMap)
-        lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.e(
-            TAG,
-            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
-        )
+//        lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
+//        Log.e(
+//            TAG,
+//            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
+//        )
 
         val landmark_buffer = outputMap[0] as Array<Array<Array<FloatArray>>>
         val faceflag_buffer = outputMap[1] as Array<Array<Array<FloatArray>>>
 
         val postProcessingStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val facemeshes = postProcessModelOuputs(bitmap, landmark_buffer, faceflag_buffer)
-        Log.i(
+//        Log.i(
+//            TAG,
+//            String.format(
+//                "Postprocessing took %.2f ms",
+//                (SystemClock.elapsedRealtimeNanos() - postProcessingStartTimeNanos) / 1_000_000f
+//            )
+//        )
+        lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
+        Log.e(
             TAG,
-            String.format(
-                "Postprocessing took %.2f ms",
-                (SystemClock.elapsedRealtimeNanos() - postProcessingStartTimeNanos) / 1_000_000f
-            )
+            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
         )
-
         return facemeshes
     }
 

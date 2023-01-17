@@ -59,25 +59,22 @@ abstract class ObjectDetector(
     private val visualizationUtils:VisualizationUtils = VisualizationUtils()
     @Suppress("UNCHECKED_CAST")
     override fun inferenceImage(bitmap: Bitmap): List<DetectedObject> {
+        val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val inputArray = arrayOf(processInputImage(bitmap).tensorBuffer.buffer)
-        Log.i(
-            TAG,
-            String.format(
-                "Scaling to [-1,1] took %.2f ms",
-                (SystemClock.elapsedRealtimeNanos() - estimationStartTimeNanos) / 1_000_000f
-            )
-        )
+//        Log.i(
+//            TAG,
+//            String.format(
+//                "Scaling to [-1,1] took %.2f ms",
+//                (SystemClock.elapsedRealtimeNanos() - estimationStartTimeNanos) / 1_000_000f
+//            )
+//        )
 
         val outputMap = initOutputMap(interpreter)
 
-        val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
+//        val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         interpreter.runForMultipleInputsOutputs(inputArray, outputMap)
-        lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.e(
-            TAG,
-            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
-        )
+
 
         // [1 * 10 * 4] contains location/bounding box
         val outputLocations = outputMap[0] as Array<Array<FloatArray>>
@@ -90,12 +87,17 @@ abstract class ObjectDetector(
 
         val postProcessingStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val detected_list = postProcessModelOuputs(bitmap, outputLocations, outputClasses, outputScores, numDetections)
-        Log.i(
+//        Log.i(
+//            TAG,
+//            String.format(
+//                "Postprocessing took %.2f ms",
+//                (SystemClock.elapsedRealtimeNanos() - postProcessingStartTimeNanos) / 1_000_000f
+//            )
+//        )
+        lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
+        Log.e(
             TAG,
-            String.format(
-                "Postprocessing took %.2f ms",
-                (SystemClock.elapsedRealtimeNanos() - postProcessingStartTimeNanos) / 1_000_000f
-            )
+            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
         )
         return detected_list
     }

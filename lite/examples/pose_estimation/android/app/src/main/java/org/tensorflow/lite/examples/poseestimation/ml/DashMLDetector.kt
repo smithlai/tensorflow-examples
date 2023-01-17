@@ -20,6 +20,10 @@ import android.content.Context
 import android.graphics.*
 import android.os.SystemClock
 import android.util.Log
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.*
@@ -39,8 +43,8 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         fun create(context: Context): DashMLDetector {
             val detectors = listOf(
                 MoveNetMultiPose.create(context, Device.CPU,Type.Dynamic),
-                EfficientDetector.create(context, Device.CPU),
-                FaceMeshDetector.create(context, Device.CPU)
+                EfficientDetector.create(context, Device.GPU),
+                FaceMeshDetector.create(context, Device.GPU)
             )
 
             return DashMLDetector(detectors)
@@ -57,22 +61,42 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         var face_list : List<FaceMesh>? = null
 
         val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
-        for(detector in detector_list){
-            when(detector) {
-                is ObjectDetector -> {
-                    object_list = (detector as EfficientDetector).inferenceImage(bitmap)
-                }
-                is PoseDetector -> {
-                    person_list = (detector as PoseDetector).inferenceImage(bitmap)
-                }
-                is FaceMeshDetector -> {
-                    face_list = (detector as FaceMeshDetector).inferenceImage(bitmap)
-                }
-                else ->{
+        runBlocking {
+            val mutableList = mutableListOf<Deferred<*>>()
 
+            for(detector in detector_list){
+                when(detector) {
+                    is EfficientDetector -> {
+                        mutableList.add(async { object_list = detector?.inferenceImage(bitmap) })
+                    }
+                    is PoseDetector -> {
+                        mutableList.add(async { person_list = detector?.inferenceImage(bitmap) })
+                    }
+                    is FaceMeshDetector -> {
+                        mutableList.add(async { face_list = detector?.inferenceImage(bitmap) })
+                    }
+                    else ->{
+
+                    }
                 }
             }
         }
+//        for(detector in detector_list){
+//            when(detector) {
+//                is EfficientDetector -> {
+//                    object_list = detector.inferenceImage(bitmap)
+//                }
+//                is PoseDetector -> {
+//                    person_list = detector.inferenceImage(bitmap)
+//                }
+//                is FaceMeshDetector -> {
+//                    face_list = detector.inferenceImage(bitmap)
+//                }
+//                else ->{
+//
+//                }
+//            }
+//        }
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
         Log.e(
             TAG,
@@ -93,22 +117,22 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         var tmpbmp = bitmap
         for(detector in detector_list) {
             when (detector) {
-                is ObjectDetector -> {
-                    (detector as EfficientDetector).let { _detector ->
+                is EfficientDetector -> {
+                    detector.let { _detector ->
                         results.object_list?.let { result_list ->
                             tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
                         }
                     }
                 }
                 is PoseDetector -> {
-                    (detector as PoseDetector).let { _detector ->
+                    detector.let { _detector ->
                         results.pose_list?.let { result_list ->
                             tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
                         }
                     }
                 }
                 is FaceMeshDetector -> {
-                    (detector as FaceMeshDetector).let { _detector ->
+                    detector.let { _detector ->
                         results.face_list?.let { result_list ->
                             tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
                         }

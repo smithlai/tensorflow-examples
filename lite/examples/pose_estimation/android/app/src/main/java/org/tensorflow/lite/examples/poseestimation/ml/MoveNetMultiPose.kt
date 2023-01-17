@@ -21,6 +21,7 @@ import android.graphics.Bitmap
 import android.graphics.PointF
 import android.graphics.RectF
 import android.os.SystemClock
+import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.BodyPart
@@ -272,6 +273,10 @@ class MoveNetMultiPose(
         val processedPerson = postProcess(outputTensor.floatArray)
         lastInferenceTimeNanos =
             SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
+        Log.e(
+            PoseDetector.TAG,
+            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
+        )
         return processedPerson
     }
 

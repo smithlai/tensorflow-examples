@@ -93,7 +93,7 @@ class FaceCropDetector(
         val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         interpreter.runForMultipleInputsOutputs(inputArray, outputMap)
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.e(
+        Log.i(
             TAG,
             String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
         )

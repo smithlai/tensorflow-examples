@@ -17,21 +17,11 @@ limitations under the License.
 package org.tensorflow.lite.examples.poseestimation.ml
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Bitmap
 import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.*
-import org.tensorflow.lite.DataType
-import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.*
-import org.tensorflow.lite.gpu.GpuDelegate
-import org.tensorflow.lite.support.common.FileUtil
-import org.tensorflow.lite.support.common.ops.NormalizeOp
-import org.tensorflow.lite.support.image.ImageProcessor
-import org.tensorflow.lite.support.image.TensorImage
-import org.tensorflow.lite.support.image.ops.ResizeOp
-import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
-import kotlin.math.exp
 
 class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDetector<DashML> {
 
@@ -39,9 +29,16 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         private const val TAG = "DashML"
         fun create(context: Context): DashMLDetector {
             val detectors = listOf(
+//                ===== Light =====
                 MoveNet.create(context, Device.CPU,ModelType.Lightning),
                 MobilenetDetector.create(context, Device.CPU),
                 FaceMeshDetector.create(context, Device.CPU)
+
+//                ===== Heavy =====
+//                MoveNetMultiPose.create(context, Device.CPU, Type.Dynamic),
+//                EfficientDetector.create(context, Device.CPU),
+//                FaceMeshDetector.create(context, Device.CPU)
+
             )
 
             return DashMLDetector(detectors)
@@ -59,34 +56,36 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
 
         val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         runBlocking {
-            val mutableList = mutableListOf<Deferred<*>>()
-            val job = launch {
+            val mutableList = mutableListOf<Job>()
+            withContext(Dispatchers.IO) {
                 for (detector in detector_list) {
                     when (detector) {
-                        is EfficientDetector -> {
-                            mutableList.add(async {
-//                                Thread.sleep(300L)
-                                object_list = detector?.inferenceImage(bitmap)
-                                Log.e("aaaaxxxx", object_list?.size.toString())
-                            })
-                        }
+//                        is EfficientDetector -> {
+//                            mutableList.add(launch {
+////                                Thread.sleep(300L)
+//                                object_list = detector?.inferenceImage(bitmap)
+////                                Log.e("aaaaxxxx", "1.${Thread.currentThread().name}"+": "+object_list?.size.toString())
+//                            })
+//                        }
                         is ObjectDetector -> {
-                            mutableList.add(async {
+                            mutableList.add(launch {
 //                                Thread.sleep(300L)
                                 object_list = detector?.inferenceImage(bitmap)
-                                Log.e("aaaaxxxx", object_list?.size.toString())
+                                Log.e("aaaaxxxx", "2.${Thread.currentThread().name}"+": "+object_list?.size.toString())
                             })
                         }
                         is PoseDetector -> {
-                            mutableList.add(async {
+                            mutableList.add(launch {
 //                                Thread.sleep(300L)
                                 person_list = detector?.inferenceImage(bitmap)
+                                Log.e("aaaaxxxx", "3.${Thread.currentThread().name}"+": "+person_list?.size.toString())
                             })
                         }
                         is FaceMeshDetector -> {
-                            mutableList.add(async {
+                            mutableList.add(launch {
 //                                Thread.sleep(300L)
                                 face_list = detector?.inferenceImage(bitmap)
+                                Log.e("aaaaxxxx", "4.${Thread.currentThread().name}"+": "+face_list?.size.toString())
                             })
                         }
                         else -> {
@@ -94,31 +93,10 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
                         }
                     }
                 }
-                mutableList.awaitAll()
-            }
-            job.invokeOnCompletion {
-                println("Completed, duration: ${System.currentTimeMillis() - inferenceStartTimeNanos} ms.")
             }
         }
-
-//        for(detector in detector_list){
-//            when(detector) {
-//                is EfficientDetector -> {
-//                    object_list = detector.inferenceImage(bitmap)
-//                }
-//                is PoseDetector -> {
-//                    person_list = detector.inferenceImage(bitmap)
-//                }
-//                is FaceMeshDetector -> {
-//                    face_list = detector.inferenceImage(bitmap)
-//                }
-//                else ->{
-//
-//                }
-//            }
-//        }
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.e(
+        Log.i(
             TAG,
             String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
         )
@@ -137,13 +115,13 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         var tmpbmp = bitmap
         for(detector in detector_list) {
             when (detector) {
-                is EfficientDetector -> {
-                    detector.let { _detector ->
-                        results.object_list?.let { result_list ->
-                            tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
-                        }
-                    }
-                }
+//                is EfficientDetector -> {
+//                    detector.let { _detector ->
+//                        results.object_list?.let { result_list ->
+//                            tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
+//                        }
+//                    }
+//                }
                 is ObjectDetector -> {
                     detector.let { _detector ->
                         results.object_list?.let { result_list ->

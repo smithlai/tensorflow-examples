@@ -273,7 +273,7 @@ class MoveNetMultiPose(
         val processedPerson = postProcess(outputTensor.floatArray)
         lastInferenceTimeNanos =
             SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.e(
+        Log.i(
             PoseDetector.TAG,
             String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
         )

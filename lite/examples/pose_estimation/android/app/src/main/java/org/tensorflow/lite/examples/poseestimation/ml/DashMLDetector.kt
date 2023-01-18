@@ -55,11 +55,10 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         var face_list : List<FaceMesh>? = null
 
         val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
-        runBlocking {
+        runBlocking(Dispatchers.IO) {
             val mutableList = mutableListOf<Job>()
-            withContext(Dispatchers.IO) {
-                for (detector in detector_list) {
-                    when (detector) {
+            for (detector in detector_list) {
+                when (detector) {
 //                        is EfficientDetector -> {
 //                            mutableList.add(launch {
 ////                                Thread.sleep(300L)
@@ -67,33 +66,33 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
 ////                                Log.e("aaaaxxxx", "1.${Thread.currentThread().name}"+": "+object_list?.size.toString())
 //                            })
 //                        }
-                        is ObjectDetector -> {
-                            mutableList.add(launch {
+                    is ObjectDetector -> {
+                        mutableList.add(launch {
 //                                Thread.sleep(300L)
-                                object_list = detector?.inferenceImage(bitmap)
-                                Log.e("aaaaxxxx", "2.${Thread.currentThread().name}"+": "+object_list?.size.toString())
-                            })
-                        }
-                        is PoseDetector -> {
-                            mutableList.add(launch {
+                            object_list = detector?.inferenceImage(bitmap)
+                            Log.e("aaaaxxxx", "2.${Thread.currentThread().name}"+": "+object_list?.size.toString())
+                        })
+                    }
+                    is PoseDetector -> {
+                        mutableList.add(launch {
 //                                Thread.sleep(300L)
-                                person_list = detector?.inferenceImage(bitmap)
-                                Log.e("aaaaxxxx", "3.${Thread.currentThread().name}"+": "+person_list?.size.toString())
-                            })
-                        }
-                        is FaceMeshDetector -> {
-                            mutableList.add(launch {
+                            person_list = detector?.inferenceImage(bitmap)
+                            Log.e("aaaaxxxx", "3.${Thread.currentThread().name}"+": "+person_list?.size.toString())
+                        })
+                    }
+                    is FaceMeshDetector -> {
+                        mutableList.add(launch {
 //                                Thread.sleep(300L)
-                                face_list = detector?.inferenceImage(bitmap)
-                                Log.e("aaaaxxxx", "4.${Thread.currentThread().name}"+": "+face_list?.size.toString())
-                            })
-                        }
-                        else -> {
+                            face_list = detector?.inferenceImage(bitmap)
+                            Log.e("aaaaxxxx", "4.${Thread.currentThread().name}"+": "+face_list?.size.toString())
+                        })
+                    }
+                    else -> {
 
-                        }
                     }
                 }
             }
+
         }
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
         Log.i(

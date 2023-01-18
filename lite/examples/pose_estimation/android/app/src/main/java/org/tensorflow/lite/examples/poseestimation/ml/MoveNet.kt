@@ -19,6 +19,7 @@ package org.tensorflow.lite.examples.poseestimation.ml
 import android.content.Context
 import android.graphics.*
 import android.os.SystemClock
+import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.*
@@ -158,6 +159,10 @@ class MoveNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
         }
         lastInferenceTimeNanos =
             SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
+        Log.i(
+            TAG,
+            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
+        )
         return listOf(Person(keyPoints = keyPoints, score = totalScore / numKeyPoints))
     }
 

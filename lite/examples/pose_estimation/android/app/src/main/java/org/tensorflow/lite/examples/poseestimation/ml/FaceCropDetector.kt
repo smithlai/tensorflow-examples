@@ -25,6 +25,7 @@ import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.FaceCrop
 import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
+import org.tensorflow.lite.examples.poseestimation.data.SSDAnchors
 import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
@@ -42,12 +43,13 @@ class FaceCropDetector(
     companion object {
         private const val MEAN = 127.5f
         private const val STD = 127.5f
-        private const val scoreThreshold = 0.5f
+        private const val scoreThreshold = 0.7f
         private const val iouThreshold = 0.3f
         private const val THRESHOLD = 0.3f
         private const val TAG = "FaceCrop"
 //        https://google.github.io/mediapipe/solutions/models.html#face-detection
-        private const val MODEL_FILENAME = "face_detection_full_range.tflite"
+//        private const val MODEL_FILENAME = "face_detection_full_range.tflite"
+        private const val MODEL_FILENAME = "face_detection_back.tflite"
 
         fun create(context: Context, device: Device): FaceCropDetector {
             val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
@@ -76,6 +78,10 @@ class FaceCropDetector(
         reverseSigmoid(scoreThreshold.toDouble()).toFloat()
     }
     private val visualizationUtils:VisualizationUtils = VisualizationUtils()
+    private lateinit var ssdAnchor:List<Pair<Float,Float>>
+    init{
+        ssdAnchor = SSDAnchors.ssd_generate_anchors(SSDAnchors.SSD_OPTIONS_BACK)
+    }
     @Suppress("UNCHECKED_CAST")
     override fun inferenceImage(bitmap: Bitmap): List<FaceCrop> {
         val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
@@ -102,7 +108,9 @@ class FaceCropDetector(
         val faceconfidence_buffer = outputMap[1] as Array<Array<FloatArray>>
 
         val postProcessingStartTimeNanos = SystemClock.elapsedRealtimeNanos()
-        val facecrops = postProcessModelOuputs(bitmap, anchors_buffer, faceconfidence_buffer)
+        val facecrops = postProcessModelOuputs(bitmap, anchors_buffer,
+            interpreter.getOutputTensor(0).shape(),
+            faceconfidence_buffer)
         Log.i(
             TAG,
             String.format(
@@ -120,43 +128,29 @@ class FaceCropDetector(
     private fun postProcessModelOuputs(
         bitmap: Bitmap,
         anchors_buffer: Array<Array<FloatArray>>,
+        shape: IntArray,
         faceconfidence_buffer: Array<Array<FloatArray>>
     ): List<FaceCrop> {
 
 
         var faceCrops = mutableListOf<FaceCrop>()
         // type: float32[1,2304,1]
+
+
+
+        val new_boxes = SSDAnchors.decode_boxes(inputHeight, anchors_buffer, shape, ssdAnchor)
+
         for (i in 0 until faceconfidence_buffer[0].size){
 
             // type: float32[1,2304,1]
             if(faceconfidence_buffer[0][i][0] < reversedSigmoid)
                 continue
             val confidence = faceconfidence_buffer[0][i][0]
-            // type: float32[1,2304,16]
-            val current = anchors_buffer[0][i]
-
-//            current[0] = (current[0]) + inputWidth/2
-//            current[1] = (current[1] * inputWidth)
-//            current[2] = (current[2] * inputHeight) + inputWidth/2
-//            current[3] = (current[3] * inputHeight)
-
-            var tl = Pair(current[0], current[2])
-            var rb = Pair(current[1],current[3])
-            var leye = Pair(current[4],current[5])
-            var reye = Pair(current[6], current[7])
-            var nose = Pair(current[8], current[9])
-            var mouth = Pair(current[10], current[11])
-            var leye_tragion = Pair(current[12], current[13])
-            var reye_tragion = Pair(current[14], current[15])
-
+            for (j in 0 until new_boxes[i].size){
+                new_boxes[i][j] = Pair(new_boxes[i][j].first*bitmap.width, new_boxes[i][j].second*bitmap.height)
+            }
             faceCrops.add(
-                FaceCrop(
-                    tl=tl,rb=rb,
-                    leye=leye, reye = reye,
-                    nose=nose, mouth = mouth,
-                    leye_tragion=leye_tragion, reye_tragion=reye_tragion,
-                    confidence = confidence
-                )
+                FaceCrop( data = new_boxes[i].toList(), score = confidence)
             )
         }
         if (faceCrops.size > 0) {
@@ -204,7 +198,7 @@ class FaceCropDetector(
 
         // float32[1,2304,16]
         val coordinations_shape = interpreter.getOutputTensor(0).shape()
-        Log.e("1111", coordinations_shape[0].toString()+" "+coordinations_shape[1].toString()+" "+ coordinations_shape[2].toString())
+//        Log.e("aaaa", coordinations_shape.joinToString(",") )
         outputMap[0] = Array(coordinations_shape[0]) {
 
             Array(coordinations_shape[1]) {
@@ -215,6 +209,7 @@ class FaceCropDetector(
 
 //        // type: float32[1,2304,1]
         val confidence_shape = interpreter.getOutputTensor(1).shape()
+//        Log.e("aaaa", confidence_shape.joinToString(",") )
         outputMap[1] = Array(confidence_shape[0]) {
             Array(confidence_shape[1]) {
                 FloatArray(confidence_shape[2])
@@ -276,61 +271,14 @@ class FaceCropDetector(
 
             val originalSizeCanvas = Canvas(output)
             results.forEach { facecrop ->
-                originalSizeCanvas.drawCircle(
-                    facecrop.tl.first,
-                    facecrop.tl.second,
-                    CIRCLE_RADIUS,
-                    paintCircle
-                )
-                originalSizeCanvas.drawCircle(
-                    facecrop.tl.first,
-                    facecrop.rb.second,
-                    CIRCLE_RADIUS,
-                    paintCircle
-                )
-                originalSizeCanvas.drawCircle(
-                    facecrop.rb.first,
-                    facecrop.rb.second,
-                    CIRCLE_RADIUS,
-                    paintCircle
-                )
-                originalSizeCanvas.drawCircle(
-                    facecrop.rb.first,
-                    facecrop.tl.second,
-                    CIRCLE_RADIUS,
-                    paintCircle
-                )
-                originalSizeCanvas.drawCircle(
-                    facecrop.tl.first,
-                    facecrop.tl.second,
-                    CIRCLE_RADIUS,
-                    paintCircle
-                )
-
-                originalSizeCanvas.drawCircle(
-                    facecrop.leye.first,
-                    facecrop.leye.second,
-                    CIRCLE_RADIUS,
-                    paintCircle
-                )
-                originalSizeCanvas.drawCircle(
-                    facecrop.reye.first,
-                    facecrop.reye.second,
-                    CIRCLE_RADIUS,
-                    paintCircle
-                )
-                originalSizeCanvas.drawCircle(
-                    facecrop.nose.first,
-                    facecrop.nose.second,
-                    CIRCLE_RADIUS,
-                    paintCircle
-                )
-                originalSizeCanvas.drawCircle(
-                    facecrop.mouth.first,
-                    facecrop.mouth.second,
-                    CIRCLE_RADIUS,
-                    paintCircle
-                )
+                facecrop.data.forEach { keypoint ->
+                    originalSizeCanvas.drawCircle(
+                        keypoint.first,
+                        keypoint.second,
+                        CIRCLE_RADIUS,
+                        paintCircle
+                    )
+                }
             }
             return output
         }

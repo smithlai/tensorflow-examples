@@ -18,7 +18,7 @@
         <item>ObjectDetect</item>
         <item>EfficientDetect</item>
         <item>Dash ML</item>
-<!--        <item>Face Crop</item>-->
+        <item>Face Crop</item>
     </string-array>
 
     <string-array name="tfe_pe_device_name">

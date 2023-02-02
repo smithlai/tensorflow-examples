@@ -345,7 +345,7 @@ class MainActivity : AppCompatActivity() {
                 showPoseClassifier(false)
                 showDetectionScore(false)
                 showTracker(false)
-                FaceMeshDetector.create(this, device)
+                MultiFaceMeshDetector.create(this, device)
             }
             5->{
                 showPoseClassifier(false)
@@ -366,6 +366,12 @@ class MainActivity : AppCompatActivity() {
                 DashMLDetector.create(this)
             }
             8->{
+                showPoseClassifier(false)
+                showDetectionScore(false)
+                showTracker(false)
+                FaceMeshDetector.create(this, device)
+            }
+            9->{
                 showPoseClassifier(false)
                 showDetectionScore(false)
                 showTracker(false)

@@ -262,6 +262,13 @@ class CameraSource(
                             faceMeshes.addAll(it)
                         }
                     }
+
+                    is MultiFaceMeshDetector ->{
+                        val pd = it as MultiFaceMeshDetector
+                        pd.inferenceImage(bitmap)?.let {
+                            faceMeshes.addAll(it)
+                        }
+                    }
                     is MobilenetDetector ->{
                         val pd = it as MobilenetDetector
                         pd.inferenceImage(bitmap)?.let {
@@ -316,6 +323,11 @@ class CameraSource(
                 is FaceMeshDetector ->{
                     faceMeshes?.let {
                         (detector as? FaceMeshDetector)?.visualize(canvas,bitmap, it)
+                    }
+                }
+                is MultiFaceMeshDetector ->{
+                    faceMeshes?.let {
+                        (detector as? MultiFaceMeshDetector)?.visualize(canvas,bitmap, it)
                     }
                 }
                 is MobilenetDetector ->{

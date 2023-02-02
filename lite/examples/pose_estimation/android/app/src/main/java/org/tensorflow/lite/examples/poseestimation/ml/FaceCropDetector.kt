@@ -140,22 +140,32 @@ class FaceCropDetector(
 
         val new_boxes = SSDAnchors.decode_boxes(inputHeight, anchors_buffer, shape, ssdAnchor)
 
+        // type: float32[1,2304,1]
         for (i in 0 until faceconfidence_buffer[0].size){
 
-            // type: float32[1,2304,1]
+
+            // skip confidence < scoreThreshold
             if(faceconfidence_buffer[0][i][0] < reversedSigmoid)
                 continue
             val confidence = faceconfidence_buffer[0][i][0]
             for (j in 0 until new_boxes[i].size){
                 new_boxes[i][j] = Pair(new_boxes[i][j].first*bitmap.width, new_boxes[i][j].second*bitmap.height)
             }
-            faceCrops.add(
-                FaceCrop( data = new_boxes[i].toList(), score = confidence)
-            )
+
+            if (faceCrops.isEmpty() || faceCrops[0].score<confidence){
+                faceCrops.add(0, FaceCrop(data = new_boxes[i].toList(), score = confidence))
+            } else {
+                faceCrops.add(
+                    FaceCrop(data = new_boxes[i].toList(), score = confidence)
+                )
+            }
         }
         if (faceCrops.size > 0) {
             Log.e("aaaa", "Find " + faceCrops.size.toString() + " face")
+            //Todo: NMS
+            return listOf(faceCrops.get(0))
         }
+
         return faceCrops.toList()
     }
 
@@ -218,6 +228,7 @@ class FaceCropDetector(
         return outputMap
     }
     override fun drawKeypoints(bitmap: Bitmap, results: List<FaceCrop> ): Bitmap {
+
         val outputBitmap = visualizationUtils.drawKeypoints(bitmap,results)
         if (results.size > 0) {
             Log.e("bbbb", results.size.toString())
@@ -279,6 +290,12 @@ class FaceCropDetector(
                         paintCircle
                     )
                 }
+                originalSizeCanvas.drawText(
+                    facecrop.score.toString(),
+                    facecrop.data.get(0).first,
+                    facecrop.data.get(0).second,
+                    paintText
+                )
             }
             return output
         }

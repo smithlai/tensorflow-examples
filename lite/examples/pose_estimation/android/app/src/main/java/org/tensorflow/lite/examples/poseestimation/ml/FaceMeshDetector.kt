@@ -32,6 +32,7 @@ import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
+import java.lang.Float.min
 import kotlin.math.exp
 
 class FaceMeshDetector(
@@ -150,7 +151,7 @@ class FaceMeshDetector(
         val confidence = sigmoid(faceflag)
         var facelist = mutableListOf<FaceMesh>()
         if (confidence>= THRESHOLD)
-            facelist.add(FaceMesh(keypoints = keypointPositions2.toList(), confidence = confidence))
+            facelist.add(FaceMesh(keypoints = keypointPositions2.toList(), listOf(Pair(0f,0f),Pair(bitmap.width.toFloat(), bitmap.height.toFloat())), confidence = confidence))
         return facelist.toList()
     }
 
@@ -260,12 +261,22 @@ class FaceMeshDetector(
 
             val originalSizeCanvas = Canvas(output)
             results.forEach { facemesh ->
+                val tl = facemesh.facecrop.get(0)
+                val x1 = tl.first
+                val y1 = tl.second
+                val br = facemesh.facecrop.get(1)
+                val x2 = br.first
+                val y2 = br.second
+                val w = x2- x1
+                val h = y2- y1
+                val circle_rad = min(w,h)/120
+                paintCircle.strokeWidth = circle_rad
                 facemesh.keypoints.forEach{ keypoint->
 //                Log.e("aaaaa", keypoint.toString())
                     originalSizeCanvas.drawCircle(
-                        keypoint.first,
-                        keypoint.second,
-                        CIRCLE_RADIUS,
+                        keypoint.first+x1,
+                        keypoint.second+y1,
+                        circle_rad,
                         paintCircle
                     )
                 }

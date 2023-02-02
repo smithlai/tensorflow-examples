@@ -14,11 +14,12 @@
         <item>Movenet Thunder</item>
         <item>Movenet MultiPose</item>
         <item>Posenet</item>
-        <item>Face Mesh</item>
+        <item>Multi FaceMesh</item>
         <item>ObjectDetect</item>
         <item>EfficientDetect</item>
         <item>Dash ML</item>
-        <item>Face Crop</item>
+        <item>FaceMesh Only</item>
+        <item>FaceCrop</item>
     </string-array>
 
     <string-array name="tfe_pe_device_name">

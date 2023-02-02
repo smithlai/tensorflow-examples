@@ -33,7 +33,9 @@ import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
+import java.lang.Float.min
 import java.lang.Math.log
+import java.lang.Float.max
 import kotlin.math.exp
 
 class FaceCropDetector(
@@ -44,8 +46,7 @@ class FaceCropDetector(
         private const val MEAN = 127.5f
         private const val STD = 127.5f
         private const val scoreThreshold = 0.7f
-        private const val iouThreshold = 0.3f
-        private const val THRESHOLD = 0.3f
+        private const val nmsThreshold = 0.3f
         private const val TAG = "FaceCrop"
 //        https://google.github.io/mediapipe/solutions/models.html#face-detection
 //        private const val MODEL_FILENAME = "face_detection_full_range.tflite"
@@ -111,6 +112,8 @@ class FaceCropDetector(
         val facecrops = postProcessModelOuputs(bitmap, anchors_buffer,
             interpreter.getOutputTensor(0).shape(),
             faceconfidence_buffer)
+        val prine_facecrops = NMS(facecrops, scoreThreshold, nmsThreshold)
+
         Log.i(
             TAG,
             String.format(
@@ -119,7 +122,7 @@ class FaceCropDetector(
             )
         )
 
-        return facecrops
+        return prine_facecrops
     }
 
     /**
@@ -143,28 +146,18 @@ class FaceCropDetector(
         // type: float32[1,2304,1]
         for (i in 0 until faceconfidence_buffer[0].size){
 
-
+            val confidence = sigmoid(faceconfidence_buffer[0][i][0])
             // skip confidence < scoreThreshold
-            if(faceconfidence_buffer[0][i][0] < reversedSigmoid)
+            if(confidence < scoreThreshold)
                 continue
-            val confidence = faceconfidence_buffer[0][i][0]
             for (j in 0 until new_boxes[i].size){
                 new_boxes[i][j] = Pair(new_boxes[i][j].first*bitmap.width, new_boxes[i][j].second*bitmap.height)
             }
-
-            if (faceCrops.isEmpty() || faceCrops[0].score<confidence){
-                faceCrops.add(0, FaceCrop(data = new_boxes[i].toList(), score = confidence))
-            } else {
-                faceCrops.add(
-                    FaceCrop(data = new_boxes[i].toList(), score = confidence)
-                )
-            }
+            faceCrops.add(
+                FaceCrop(data = new_boxes[i].toList(), score = confidence)
+            )
         }
-        if (faceCrops.size > 0) {
-            Log.e("aaaa", "Find " + faceCrops.size.toString() + " face")
-            //Todo: NMS
-            return listOf(faceCrops.get(0))
-        }
+        faceCrops.sortByDescending { it.score }
 
         return faceCrops.toList()
     }
@@ -244,6 +237,55 @@ class FaceCropDetector(
     private fun reverseSigmoid(x: Double): Double {
         return Math.log(scoreThreshold / (1.0 - scoreThreshold))
     }
+
+    private fun overlap_similarity(box1: Pair<Pair<Float,Float>,Pair<Float,Float>>,box2: Pair<Pair<Float,Float>,Pair<Float,Float>>) : Float{
+        val box1_tl = box1.first
+        val box2_tl = box2.first
+        val tl_x = max(box1_tl.first, box2_tl.first)
+        val tl_y = max(box1_tl.second, box2_tl.second)
+
+        val box1_br = box2.second
+        val box2_br = box2.second
+        val br_x = min(box1_br.first, box2_br.first)
+        val br_y = min(box1_br.second, box2_br.second)
+        if (tl_x > br_x || tl_y > br_y){
+            return 0f
+        }
+        val area1 = (box1_br.first - box1_tl.first)*(box1_br.second - box1_tl.second)
+        val area2 = (box2_br.first - box2_tl.first)*(box2_br.second - box2_tl.second)
+        val area3 = (br_x - tl_x) * (br_y - tl_y)
+        // Log.e("xxxx", "area1: " + area1+",area2: " + area2 + ",area3: " + area3)
+        val denominator = area1+area2-area3
+        if (denominator > 0)
+            return area3/denominator
+        else
+            return 0f
+    }
+    private fun NMS(facecrops: List<FaceCrop>, scoreThreshold: Float, nmsThreshold:Float): List<FaceCrop>{
+        """Return only most significant detections"""
+        val kept_faces = mutableListOf<FaceCrop>()
+
+        for (face in facecrops){
+            if (face.score < scoreThreshold) // the face have been sorted by score
+                break   // break because the remained are low score.
+            var suppressed = false
+            for (kept in kept_faces){
+                val similarity = overlap_similarity(Pair(kept.data.get(0),kept.data.get(1)), Pair(face.data.get(0),face.data.get(1)))
+                // Log.e("ssssss", "similarity " + similarity)
+
+                if (similarity > nmsThreshold){
+                    // too similir, kill!
+                    suppressed = true
+                    break
+                }
+            }
+            if (!suppressed){
+                kept_faces.add(face)
+            }
+        }
+        return kept_faces.toList()
+    }
+
     class VisualizationUtils {
         companion object {
             /** Radius of circle used to draw keypoints.  */

@@ -23,6 +23,7 @@ import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.Device
+import org.tensorflow.lite.examples.poseestimation.data.FaceCrop
 import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
 import org.tensorflow.lite.examples.poseestimation.data.Person
 import org.tensorflow.lite.gpu.GpuDelegate
@@ -42,7 +43,8 @@ class FaceMeshDetector(
     companion object {
         private const val MEAN = 127.5f
         private const val STD = 127.5f
-        private const val THRESHOLD = 0.99f
+        private const val THRESHOLD = 0.90f
+        private const val STROKE_RATIO = 120
         private const val TAG = "FaceMesh"
 //        https://google.github.io/mediapipe/solutions/models.html#face-mesh
         private const val MODEL_FILENAME = "face_landmark.tflite"
@@ -150,8 +152,19 @@ class FaceMeshDetector(
         val faceflag = faceflag_buffer[0][0][0][0]
         val confidence = sigmoid(faceflag)
         var facelist = mutableListOf<FaceMesh>()
-        if (confidence>= THRESHOLD)
-            facelist.add(FaceMesh(keypoints = keypointPositions2.toList(), listOf(Pair(0f,0f),Pair(bitmap.width.toFloat(), bitmap.height.toFloat())), confidence = confidence))
+        if (confidence>= THRESHOLD) {
+            val face_crop = FaceCrop(
+                listOf(Pair(0f, 0f), Pair(bitmap.width.toFloat(), bitmap.height.toFloat())),
+                1.0f
+            )
+            facelist.add(
+                FaceMesh(
+                    keypoints = keypointPositions2.toList(),
+                    face_crop,
+                    confidence = confidence
+                )
+            )
+        }
         return facelist.toList()
     }
 
@@ -261,15 +274,15 @@ class FaceMeshDetector(
 
             val originalSizeCanvas = Canvas(output)
             results.forEach { facemesh ->
-                val tl = facemesh.facecrop.get(0)
+                val tl = facemesh.facecrop.data.get(0)
                 val x1 = tl.first
                 val y1 = tl.second
-                val br = facemesh.facecrop.get(1)
+                val br = facemesh.facecrop.data.get(1)
                 val x2 = br.first
                 val y2 = br.second
                 val w = x2- x1
                 val h = y2- y1
-                val circle_rad = min(w,h)/120
+                val circle_rad = min(w,h)/STROKE_RATIO
                 paintCircle.strokeWidth = circle_rad
                 facemesh.keypoints.forEach{ keypoint->
 //                Log.e("aaaaa", keypoint.toString())

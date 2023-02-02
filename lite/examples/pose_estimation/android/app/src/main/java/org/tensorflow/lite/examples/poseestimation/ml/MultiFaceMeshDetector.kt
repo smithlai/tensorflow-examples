@@ -85,8 +85,11 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
                 h = y2 - y1
                 val face = Bitmap.createBitmap(bitmap, x1.toInt(),y1.toInt(), w.toInt(), h.toInt())
                 val tmpmesh = faceMeshDetector.inferenceImage(face)
+                val new_crop_points = crop.data.toMutableList()
+                new_crop_points[0] = Pair(x1,y1)
+                new_crop_points[1] = Pair(x2,y2)
                 tmpmesh.forEach {
-                    it.facecrop = listOf(Pair(x1,y1),Pair(x2,y2))
+                    it.facecrop = FaceCrop(new_crop_points,crop.score)
                 }
                 facemeshes.addAll(tmpmesh)
             }
@@ -111,6 +114,9 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
     override fun drawKeypoints(bitmap: Bitmap, results: List<FaceMesh> ): Bitmap {
 //        var outputBitmap = faceCropDetector.drawKeypoints(bitmap, croplist)
         val outputBitmap = faceMeshDetector.drawKeypoints(bitmap, results)
+        for (face in results){
+            face
+        }
         return outputBitmap
     }
 

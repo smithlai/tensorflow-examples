@@ -31,8 +31,8 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
             val detectors = listOf(
 //                ===== Light =====
                 MoveNet.create(context, Device.CPU,ModelType.Lightning),
-                MobilenetDetector.create(context, Device.CPU),
-                FaceMeshDetector.create(context, Device.CPU)
+                MobilenetDetector.create(context, Device.GPU),
+                MultiFaceMeshDetector.create(context, Device.GPU)
 
 //                ===== Heavy =====
 //                MoveNetMultiPose.create(context, Device.CPU, Type.Dynamic),
@@ -70,21 +70,21 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
                         mutableList.add(launch {
 //                                Thread.sleep(300L)
                             object_list = detector?.inferenceImage(bitmap)
-                            Log.e("aaaaxxxx", "2.${Thread.currentThread().name}"+": "+object_list?.size.toString())
+//                            Log.e("aaaaxxxx", "2.${Thread.currentThread().name}"+": "+object_list?.size.toString())
                         })
                     }
                     is PoseDetector -> {
                         mutableList.add(launch {
 //                                Thread.sleep(300L)
                             person_list = detector?.inferenceImage(bitmap)
-                            Log.e("aaaaxxxx", "3.${Thread.currentThread().name}"+": "+person_list?.size.toString())
+//                            Log.e("aaaaxxxx", "3.${Thread.currentThread().name}"+": "+person_list?.size.toString())
                         })
                     }
-                    is FaceMeshDetector -> {
+                    is MultiFaceMeshDetector -> {
                         mutableList.add(launch {
 //                                Thread.sleep(300L)
                             face_list = detector?.inferenceImage(bitmap)
-                            Log.e("aaaaxxxx", "4.${Thread.currentThread().name}"+": "+face_list?.size.toString())
+//                            Log.e("aaaaxxxx", "4.${Thread.currentThread().name}"+": "+face_list?.size.toString())
                         })
                     }
                     else -> {
@@ -135,7 +135,7 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
                         }
                     }
                 }
-                is FaceMeshDetector -> {
+                is MultiFaceMeshDetector -> {
                     detector.let { _detector ->
                         results.face_list?.let { result_list ->
                             tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)

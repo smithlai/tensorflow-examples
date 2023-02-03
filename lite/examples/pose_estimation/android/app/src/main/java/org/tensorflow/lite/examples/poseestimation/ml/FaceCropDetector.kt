@@ -223,9 +223,9 @@ class FaceCropDetector(
     override fun drawKeypoints(bitmap: Bitmap, results: List<FaceCrop> ): Bitmap {
 
         val outputBitmap = visualizationUtils.drawKeypoints(bitmap,results)
-        if (results.size > 0) {
-            Log.e("bbbb", results.size.toString())
-        }
+//        if (results.size > 0) {
+//            Log.e("bbbb", results.size.toString())
+//        }
         return outputBitmap
     }
     /** Returns value within [0,1].   */

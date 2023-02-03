@@ -47,9 +47,9 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
 //        private const val MODEL_FILENAME = "face_landmark_with_attention.tflite"
 
         fun create(context: Context, device: Device): MultiFaceMeshDetector {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
-            val options = settings.first
-            var gpuDelegate = settings.second
+//            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
+//            val options = settings.first
+//            var gpuDelegate = settings.second
             val faceCropDetector = FaceCropDetector.create(context, device)
             val faceMeshDetector = FaceMeshDetector.create(context, device)
             return MultiFaceMeshDetector(
@@ -99,9 +99,9 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
             TAG,
             String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
         )
-        Log.e(
-            TAG, "facemeshes.size: " + facemeshes.size.toString()
-        )
+//        Log.e(
+//            TAG, "facemeshes.size: " + facemeshes.size.toString()
+//        )
         return facemeshes
     }
 

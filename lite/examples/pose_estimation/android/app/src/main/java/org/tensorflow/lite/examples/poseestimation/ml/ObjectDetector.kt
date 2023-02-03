@@ -155,6 +155,7 @@ abstract class ObjectDetector(
             cropWidth = (bitmap.height - bitmap.width).toFloat()
             bitmap.height
         }
+//        Log.e("aaaa", inputWidth.toString() + " " +inputHeight)
         val imageProcessor = ImageProcessor.Builder().apply {
 //            add(ResizeWithCropOrPadOp(cropSize, cropSize))
             add(ResizeOp(inputWidth, inputHeight, ResizeOp.ResizeMethod.BILINEAR))

@@ -40,7 +40,7 @@ import kotlin.math.exp
 
 class FaceCropDetector(
     private val interpreter: Interpreter,
-    private var gpuDelegate: GpuDelegate?): AbstractDetector<List<FaceCrop>> {
+    private var gpuDelegate: GpuDelegate?): AbstractDetector<List<FaceCrop>>() {
 
     companion object {
         private const val MEAN = 127.5f
@@ -68,7 +68,7 @@ class FaceCropDetector(
             )
         }
     }
-
+    override var inference_results: List<FaceCrop> = listOf()
     private var lastInferenceTimeNanos: Long = -1
     private val inputWidth = interpreter.getInputTensor(0).shape()[1]
     private val inputHeight = interpreter.getInputTensor(0).shape()[2]

@@ -37,7 +37,7 @@ import java.lang.Float.max
 import java.lang.Float.min
 import kotlin.math.exp
 
-class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMeshDetector: FaceMeshDetector): AbstractDetector<List<FaceMesh>> {
+class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMeshDetector: FaceMeshDetector): AbstractDetector<List<FaceMesh>>() {
 
     companion object {
         private const val MARGIN = 0.25f
@@ -57,12 +57,14 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
             )
         }
     }
+
+    override var inference_results: List<FaceMesh> = listOf()
     private var lastInferenceTimeNanos: Long = -1
     @Suppress("UNCHECKED_CAST")
     override fun inferenceImage(bitmap: Bitmap): List<FaceMesh> {
         val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         var facemeshes = mutableListOf<FaceMesh>()
-        faceCropDetector.inferenceImage(bitmap).let{ croplist ->
+        faceCropDetector.requestInferenceImage(bitmap).let{ croplist ->
             for (crop in croplist){
                 val tl = crop.data.get(0)
                 val br = crop.data.get(1)
@@ -84,7 +86,7 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
                 w = x2 - x1
                 h = y2 - y1
                 val face = Bitmap.createBitmap(bitmap, x1.toInt(),y1.toInt(), w.toInt(), h.toInt())
-                val tmpmesh = faceMeshDetector.inferenceImage(face)
+                val tmpmesh = faceMeshDetector.requestInferenceImage(face)
                 val new_crop_points = crop.data.toMutableList()
                 new_crop_points[0] = Pair(x1,y1)
                 new_crop_points[1] = Pair(x2,y2)
@@ -112,11 +114,7 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
     }
 
     override fun drawKeypoints(bitmap: Bitmap, results: List<FaceMesh> ): Bitmap {
-//        var outputBitmap = faceCropDetector.drawKeypoints(bitmap, croplist)
-        val outputBitmap = faceMeshDetector.drawKeypoints(bitmap, results)
-        for (face in results){
-            face
-        }
+        var outputBitmap = faceMeshDetector.drawKeypoints(bitmap, results)
         return outputBitmap
     }
 

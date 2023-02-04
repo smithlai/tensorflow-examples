@@ -23,7 +23,7 @@ import android.util.Log
 import kotlinx.coroutines.*
 import org.tensorflow.lite.examples.poseestimation.data.*
 
-class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDetector<DashML> {
+class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDetector<DashML>() {
 
     companion object {
         private const val TAG = "DashML"
@@ -31,8 +31,8 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
             val detectors = listOf(
 //                ===== Light =====
                 MoveNet.create(context, Device.CPU,ModelType.Lightning),
-                MobilenetDetector.create(context, Device.GPU),
-                MultiFaceMeshDetector.create(context, Device.GPU)
+                MobilenetDetector.create(context, Device.CPU),
+                MultiFaceMeshDetector.create(context, Device.CPU)
 
 //                ===== Heavy =====
 //                MoveNetMultiPose.create(context, Device.CPU, Type.Dynamic),
@@ -44,7 +44,7 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
             return DashMLDetector(detectors)
         }
     }
-
+    override var inference_results: DashML = DashML(null, null, null)
     private var lastInferenceTimeNanos: Long = -1
 
     @Suppress("UNCHECKED_CAST")
@@ -69,21 +69,21 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
                     is ObjectDetector -> {
                         mutableList.add(launch {
 //                                Thread.sleep(300L)
-                            object_list = detector?.inferenceImage(bitmap)
+                            object_list = detector?.requestInferenceImage(bitmap)
 //                            Log.e("aaaaxxxx", "2.${Thread.currentThread().name}"+": "+object_list?.size.toString())
                         })
                     }
                     is PoseDetector -> {
                         mutableList.add(launch {
 //                                Thread.sleep(300L)
-                            person_list = detector?.inferenceImage(bitmap)
+                            person_list = detector?.requestInferenceImage(bitmap)
 //                            Log.e("aaaaxxxx", "3.${Thread.currentThread().name}"+": "+person_list?.size.toString())
                         })
                     }
                     is MultiFaceMeshDetector -> {
                         mutableList.add(launch {
 //                                Thread.sleep(300L)
-                            face_list = detector?.inferenceImage(bitmap)
+                            face_list = detector?.requestInferenceImage(bitmap)
 //                            Log.e("aaaaxxxx", "4.${Thread.currentThread().name}"+": "+face_list?.size.toString())
                         })
                     }
@@ -113,42 +113,8 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
     override fun drawKeypoints(bitmap: Bitmap, results: DashML ): Bitmap {
         var tmpbmp = bitmap
         for(detector in detector_list) {
-            when (detector) {
-//                is EfficientDetector -> {
-//                    detector.let { _detector ->
-//                        results.object_list?.let { result_list ->
-//                            tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
-//                        }
-//                    }
-//                }
-                is ObjectDetector -> {
-                    detector.let { _detector ->
-                        results.object_list?.let { result_list ->
-                            tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
-                        }
-                    }
-                }
-                is PoseDetector -> {
-                    detector.let { _detector ->
-                        results.pose_list?.let { result_list ->
-                            tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
-                        }
-                    }
-                }
-                is MultiFaceMeshDetector -> {
-                    detector.let { _detector ->
-                        results.face_list?.let { result_list ->
-                            tmpbmp=_detector.drawKeypoints(tmpbmp, result_list)
-                        }
-
-                    }
-                }
-                else -> {
-
-                }
-            }
+            detector.drawKeypoints(bitmap)
         }
         return tmpbmp
     }
-
 }

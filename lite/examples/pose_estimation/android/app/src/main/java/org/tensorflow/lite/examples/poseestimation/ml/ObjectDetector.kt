@@ -36,7 +36,7 @@ import kotlin.math.exp
 
 abstract class ObjectDetector(
     private val interpreter: Interpreter,
-    private var gpuDelegate: GpuDelegate?): AbstractDetector<List<DetectedObject>> {
+    private var gpuDelegate: GpuDelegate?): AbstractDetector<List<DetectedObject>>() {
 
     companion object {
         private const val MEAN = 127.5f
@@ -46,6 +46,7 @@ abstract class ObjectDetector(
         private const val TAG = "OD"
 
     }
+    override var inference_results: List<DetectedObject> = listOf()
     private var lastInferenceTimeNanos: Long = -1
     private val inputWidth = interpreter.getInputTensor(0).shape()[1]
     private val inputHeight = interpreter.getInputTensor(0).shape()[2]

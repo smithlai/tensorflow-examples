@@ -18,9 +18,11 @@ package org.tensorflow.lite.examples.poseestimation.ml
 
 import android.content.Context
 import android.graphics.*
+import android.util.Log
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.camera.CameraSource
 import org.tensorflow.lite.examples.poseestimation.data.BodyPart
+import org.tensorflow.lite.examples.poseestimation.data.DetectedObject
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.Person
 import org.tensorflow.lite.gpu.GpuDelegate
@@ -29,22 +31,40 @@ import kotlin.math.max
 
 abstract class PoseDetector(
     private val interpreter: Interpreter,
-    private var gpuDelegate: GpuDelegate?) : AbstractDetector<List<Person>> {
+    private var gpuDelegate: GpuDelegate?) : AbstractDetector<List<Person>>() {
     companion object {
         const val TAG = "PoseDetector"
         private const val MIN_CONFIDENCE = .2f
     }
+    override var inference_results: List<Person> = listOf()
+    var classificationResult: List<Pair<String, Float>>? = null
     var classifier: PoseClassifier? = null
         private set
+
     public val visualizationUtils: VisualizationUtils = VisualizationUtils()
 //    abstract fun inferenceImage(bitmap: Bitmap): List<Person>
 //    abstract fun lastInferenceTimeNanos(): Long
 
+    override fun requestInferenceImage(bitmap: Bitmap): List<Person>{
+        inference_results = super.requestInferenceImage(bitmap)
+        inference_results = inference_results.filter { it.score > MIN_CONFIDENCE }
+        inference_results.let {
+//            // if the model only returns one item, allow running the Pose classifier.
+//            if (it.isNotEmpty()) {
+//                classificationResult = classifier?.classify(it[0])
+//                Log.e("aaa", classificationResult.toString())
+//            }
+        }
+        return inference_results
+    }
     override fun drawKeypoints(bitmap: Bitmap, results: List<Person> ): Bitmap {
         val outputBitmap = visualizationUtils.drawBodyKeypoints(
             bitmap,
-            results.filter { it.score > MIN_CONFIDENCE }, true
+            results, true
         )
+//        if (results.isNotEmpty()) {
+//            listener?.onDetectedInfo(it[0].score, classificationResult)
+//        }
         return outputBitmap
     }
 

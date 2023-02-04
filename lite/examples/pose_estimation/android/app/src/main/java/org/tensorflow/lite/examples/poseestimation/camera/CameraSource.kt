@@ -241,65 +241,7 @@ class CameraSource(
         var dashml_results: DashML? = null
 
         synchronized(lock) {
-            detector?.let{
-                // todo: make this as task1
-                when (detector){
-                    is PoseDetector -> {
-                        val pd = it as PoseDetector
-                        pd.inferenceImage(bitmap)?.let {
-                            persons.addAll(it as List<Person>)
-                            // if the model only returns one item, allow running the Pose classifier.
-                            if (persons.isNotEmpty()) {
-                                classificationResult = pd.classifier?.classify(persons[0])
-                            }
-                        }
-                    }
-                    // todo: make this a task2
-                    // ................
-                    is FaceMeshDetector ->{
-                        val pd = it as FaceMeshDetector
-                        pd.inferenceImage(bitmap)?.let {
-                            faceMeshes.addAll(it)
-                        }
-                    }
-
-                    is MultiFaceMeshDetector ->{
-                        val pd = it as MultiFaceMeshDetector
-                        pd.inferenceImage(bitmap)?.let {
-                            faceMeshes.addAll(it)
-                        }
-                    }
-                    is MobilenetDetector ->{
-                        val pd = it as MobilenetDetector
-                        pd.inferenceImage(bitmap)?.let {
-                            detect_objects.addAll(it)
-                        }
-                    }
-                    is EfficientDetector ->{
-                        val pd = it as EfficientDetector
-                        pd.inferenceImage(bitmap)?.let {
-                            detect_objects.addAll(it)
-                        }
-                    }
-                    is DashMLDetector ->{
-                        val pd = it as DashMLDetector
-                        pd.inferenceImage(bitmap)?.let {
-                            dashml_results = it
-                        }
-                    }
-                    is FaceCropDetector ->{
-                        val pd = it as FaceCropDetector
-                        pd.inferenceImage(bitmap)?.let {
-                            facecrops.addAll(it)
-                        }
-                    }
-                    else->{
-
-                    }
-                }
-
-
-            }
+            detector?.requestInferenceImage(bitmap)
         }
         frameProcessedInOneSecondInterval++
         if (frameProcessedInOneSecondInterval == 1) {
@@ -311,52 +253,7 @@ class CameraSource(
         val holder = surfaceView.holder
         val surfaceCanvas = holder.lockCanvas()
         surfaceCanvas?.let { canvas ->
-            when (detector){
-                is PoseDetector ->{
-                    persons?.let {
-                        (detector as? PoseDetector)?.visualize(canvas,bitmap, it)
-                        if (it.isNotEmpty()) {
-                            listener?.onDetectedInfo(it[0].score, classificationResult)
-                        }
-                    }
-                }
-                is FaceMeshDetector ->{
-                    faceMeshes?.let {
-                        (detector as? FaceMeshDetector)?.visualize(canvas,bitmap, it)
-                    }
-                }
-                is MultiFaceMeshDetector ->{
-                    faceMeshes?.let {
-                        (detector as? MultiFaceMeshDetector)?.visualize(canvas,bitmap, it)
-                    }
-                }
-                is MobilenetDetector ->{
-                    detect_objects?.let {
-                        (detector as? MobilenetDetector)?.visualize(canvas,bitmap, it)
-                    }
-                }
-                is EfficientDetector ->{
-                    detect_objects?.let {
-                        (detector as? EfficientDetector)?.visualize(canvas,bitmap, it)
-                    }
-                }
-                is DashMLDetector ->{
-                    dashml_results?.let {
-                        (detector as? DashMLDetector)?.visualize(canvas,bitmap, it)
-                    }
-                }
-                is FaceCropDetector ->{
-                    if (facecrops?.size>0){
-                        Log.e("ccccc", facecrops.toString())
-                    }
-                    facecrops?.let {
-                        (detector as? FaceCropDetector)?.visualize(canvas,bitmap, it)
-                    }
-                }
-                else->{
-
-                }
-            }
+            detector?.visualize(canvas,bitmap)
 
             surfaceView.holder.unlockCanvasAndPost(canvas)
         }

@@ -38,7 +38,7 @@ import kotlin.math.exp
 
 class FaceMeshDetector(
     private val interpreter: Interpreter,
-    private var gpuDelegate: GpuDelegate?): AbstractDetector<List<FaceMesh>> {
+    private var gpuDelegate: GpuDelegate?): AbstractDetector<List<FaceMesh>>() {
 
     companion object {
         private const val MEAN = 127.5f
@@ -67,6 +67,7 @@ class FaceMeshDetector(
         }
     }
 
+    override var inference_results: List<FaceMesh> = listOf()
     private var lastInferenceTimeNanos: Long = -1
     private val inputWidth = interpreter.getInputTensor(0).shape()[1]
     private val inputHeight = interpreter.getInputTensor(0).shape()[2]
@@ -297,4 +298,5 @@ class FaceMeshDetector(
             return output
         }
     }
+
 }

@@ -24,7 +24,7 @@ import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
 import org.tensorflow.lite.gpu.GpuDelegate
 
-interface  AbstractDetector<DetectionResultT> : AutoCloseable {
+abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
     companion object {
         protected const val CPU_NUM_THREADS = 4
         fun getOption(device: Device): Pair<Interpreter.Options, GpuDelegate?>{
@@ -43,15 +43,23 @@ interface  AbstractDetector<DetectionResultT> : AutoCloseable {
             return Pair(options, gpuDelegate)
         }
     }
-    open fun inferenceImage(bitmap: Bitmap): DetectionResultT
-    fun visualize(overlay: Canvas, bitmap: Bitmap, result: DetectionResultT ){
+    abstract var inference_results: DetectionResultT
+    open fun requestInferenceImage(bitmap: Bitmap): DetectionResultT{
+        inference_results = inferenceImage(bitmap)
+        return inference_results
+    }
+    abstract protected fun inferenceImage(bitmap: Bitmap): DetectionResultT
+
+    fun visualize(overlay: Canvas, bitmap: Bitmap){
         val output = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        val bitmap = drawKeypoints(output, result)
+        val bitmap = drawKeypoints(output, inference_results)
         bitmapToOverlay(overlay, bitmap )
     }
-    open fun lastInferenceTimeNanos(): Long
-
-    open fun drawKeypoints(bitmap: Bitmap, results: DetectionResultT ):Bitmap
+    abstract fun lastInferenceTimeNanos(): Long
+    fun drawKeypoints(bitmap: Bitmap):Bitmap{
+        return drawKeypoints(bitmap, inference_results)
+    }
+    abstract fun drawKeypoints(bitmap: Bitmap, results: DetectionResultT ):Bitmap
     fun bitmapToOverlay(overlay: Canvas, outputBitmap: Bitmap){
         overlay?.let { canvas ->
             val screenWidth: Int

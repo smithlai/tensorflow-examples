@@ -40,7 +40,7 @@ enum class ModelType {
 }
 
 class MoveNet(private val interpreter: Interpreter, private var gpuDelegate: GpuDelegate?) :
-    PoseDetector(interpreter, gpuDelegate) {
+    AbstractPoseDetector(interpreter, gpuDelegate) {
 
     companion object {
         private const val MIN_CROP_KEYPOINT_SCORE = .2f

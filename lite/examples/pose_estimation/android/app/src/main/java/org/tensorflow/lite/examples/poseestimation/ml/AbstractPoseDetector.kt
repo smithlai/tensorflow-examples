@@ -29,7 +29,7 @@ import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import kotlin.math.max
 
-abstract class PoseDetector(
+abstract class AbstractPoseDetector(
     private val interpreter: Interpreter,
     private var gpuDelegate: GpuDelegate?) : AbstractDetector<List<Person>>() {
     companion object {
@@ -57,10 +57,10 @@ abstract class PoseDetector(
         }
         return inference_results
     }
-    override fun drawKeypoints(bitmap: Bitmap, results: List<Person> ): Bitmap {
+    override fun drawResultOnBitmap(bitmap: Bitmap): Bitmap {
         val outputBitmap = visualizationUtils.drawBodyKeypoints(
             bitmap,
-            results, true
+            getResults(), true
         )
 //        if (results.isNotEmpty()) {
 //            listener?.onDetectedInfo(it[0].score, classificationResult)

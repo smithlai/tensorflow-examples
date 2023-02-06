@@ -35,7 +35,7 @@ class PosenetTest {
         private const val ACCEPTABLE_ERROR = 37f
     }
 
-    private lateinit var poseDetector: PoseDetector
+    private lateinit var poseDetector: AbstractPoseDetector
     private lateinit var appContext: Context
     private lateinit var expectedDetectionResult: List<Map<BodyPart, PointF>>
 

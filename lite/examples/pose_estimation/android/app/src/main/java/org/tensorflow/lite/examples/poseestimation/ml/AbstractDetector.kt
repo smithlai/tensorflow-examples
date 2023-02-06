@@ -21,7 +21,6 @@ import android.graphics.Canvas
 import android.graphics.Rect
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.Device
-import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
 import org.tensorflow.lite.gpu.GpuDelegate
 
 abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
@@ -43,7 +42,10 @@ abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
             return Pair(options, gpuDelegate)
         }
     }
-    abstract var inference_results: DetectionResultT
+    abstract protected var inference_results: DetectionResultT
+    fun getResults(): DetectionResultT{
+        return inference_results
+    }
     open fun requestInferenceImage(bitmap: Bitmap): DetectionResultT{
         inference_results = inferenceImage(bitmap)
         return inference_results
@@ -52,14 +54,12 @@ abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
 
     fun visualize(overlay: Canvas, bitmap: Bitmap){
         val output = bitmap.copy(Bitmap.Config.ARGB_8888, true)
-        val bitmap = drawKeypoints(output, inference_results)
+        val bitmap = drawResultOnBitmap(output)
         bitmapToOverlay(overlay, bitmap )
     }
     abstract fun lastInferenceTimeNanos(): Long
-    fun drawKeypoints(bitmap: Bitmap):Bitmap{
-        return drawKeypoints(bitmap, inference_results)
-    }
-    abstract fun drawKeypoints(bitmap: Bitmap, results: DetectionResultT ):Bitmap
+    abstract fun drawResultOnBitmap(bitmap: Bitmap):Bitmap
+
     fun bitmapToOverlay(overlay: Canvas, outputBitmap: Bitmap){
         overlay?.let { canvas ->
             val screenWidth: Int

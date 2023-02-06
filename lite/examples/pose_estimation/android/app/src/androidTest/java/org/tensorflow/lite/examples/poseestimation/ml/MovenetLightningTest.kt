@@ -35,7 +35,7 @@ class MovenetLightningTest {
         private const val ACCEPTABLE_ERROR = 21f
     }
 
-    private lateinit var poseDetector: PoseDetector
+    private lateinit var poseDetector: AbstractPoseDetector
     private lateinit var appContext: Context
     private lateinit var expectedDetectionResult: List<Map<BodyPart, PointF>>
 

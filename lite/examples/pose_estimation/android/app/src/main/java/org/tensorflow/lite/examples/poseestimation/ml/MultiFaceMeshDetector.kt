@@ -57,7 +57,7 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
             )
         }
     }
-
+    private val visualizationUtils = FaceMeshDetector.VisualizationUtils()
     override var inference_results: List<FaceMesh> = listOf()
     private var lastInferenceTimeNanos: Long = -1
     @Suppress("UNCHECKED_CAST")
@@ -113,8 +113,8 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
         faceMeshDetector?.close()
     }
 
-    override fun drawKeypoints(bitmap: Bitmap, results: List<FaceMesh> ): Bitmap {
-        var outputBitmap = faceMeshDetector.drawKeypoints(bitmap, results)
+    override fun drawResultOnBitmap(bitmap: Bitmap): Bitmap {
+        var outputBitmap = visualizationUtils.drawKeypoints(bitmap, getResults())
         return outputBitmap
     }
 

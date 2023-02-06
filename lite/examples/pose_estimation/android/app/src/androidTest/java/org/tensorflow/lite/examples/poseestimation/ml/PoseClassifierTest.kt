@@ -19,7 +19,6 @@ package org.tensorflow.lite.examples.poseestimation.ml
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import junit.framework.TestCase
 import junit.framework.TestCase.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -34,7 +33,7 @@ class PoseClassifierTest {
     }
 
     private lateinit var appContext: Context
-    private lateinit var poseDetector: PoseDetector
+    private lateinit var poseDetector: AbstractPoseDetector
     private lateinit var poseClassifier: PoseClassifier
 
     @Before

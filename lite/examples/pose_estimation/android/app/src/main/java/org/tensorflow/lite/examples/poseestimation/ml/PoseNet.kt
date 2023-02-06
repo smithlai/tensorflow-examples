@@ -23,6 +23,7 @@ import android.os.SystemClock
 import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.examples.poseestimation.Utils
 import org.tensorflow.lite.examples.poseestimation.data.BodyPart
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.KeyPoint
@@ -37,7 +38,7 @@ import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
 import kotlin.math.exp
 
 class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: GpuDelegate?) :
-    PoseDetector(interpreter, gpuDelegate) {
+    AbstractPoseDetector(interpreter, gpuDelegate) {
 
     companion object {
         private const val CPU_NUM_THREADS = 4
@@ -157,7 +158,7 @@ class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
             val paddingWidth = cropWidth / 2
             xCoords[idx] = (inputImageCoordinateX * ratioWidth - paddingWidth).toInt()
 
-            confidenceScores[idx] = sigmoid(heatmaps[0][positionY][positionX][idx])
+            confidenceScores[idx] = Utils.sigmoid(heatmaps[0][positionY][positionX][idx])
         }
 
         val keypointList = mutableListOf<KeyPoint>()
@@ -239,10 +240,5 @@ class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
         }
 
         return outputMap
-    }
-
-    /** Returns value within [0,1].   */
-    private fun sigmoid(x: Float): Float {
-        return (1.0f / (1.0f + exp(-x)))
     }
 }

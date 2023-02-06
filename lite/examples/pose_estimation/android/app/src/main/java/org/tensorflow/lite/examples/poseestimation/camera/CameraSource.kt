@@ -21,7 +21,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.graphics.Matrix
-import android.graphics.Rect
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
@@ -182,8 +181,8 @@ class CameraSource(
     fun setClassifier(classifier: PoseClassifier?) {
         synchronized(lock) {
             detector?.let {
-                if (it is PoseDetector) {
-                    (it as PoseDetector)?.setClassifier(classifier)
+                if (it is AbstractPoseDetector) {
+                    (it as AbstractPoseDetector)?.setClassifier(classifier)
                 }
             }
         }

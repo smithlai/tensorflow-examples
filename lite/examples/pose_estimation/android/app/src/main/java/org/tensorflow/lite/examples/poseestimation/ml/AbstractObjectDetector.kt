@@ -22,6 +22,7 @@ import android.os.SystemClock
 import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.examples.poseestimation.Utils
 import org.tensorflow.lite.examples.poseestimation.data.DetectedObject
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
@@ -34,7 +35,7 @@ import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
 import kotlin.math.exp
 
-abstract class ObjectDetector(
+abstract class AbstractObjectDetector(
     private val interpreter: Interpreter,
     private var gpuDelegate: GpuDelegate?): AbstractDetector<List<DetectedObject>>() {
 
@@ -54,7 +55,7 @@ abstract class ObjectDetector(
     private var cropWidth = 0f
     private var cropSize = 0
     private var reversed_sigmoid: Lazy<Float> = lazy{
-        reverseSigmoid(THRESHOLD.toDouble()).toFloat()
+        Utils.reverseSigmoid(THRESHOLD.toDouble()).toFloat()
     }
 
     private val visualizationUtils:VisualizationUtils = VisualizationUtils()
@@ -198,20 +199,12 @@ abstract class ObjectDetector(
         outputMap[3] = FloatArray(numDetections[0])
         return outputMap
     }
-    override fun drawKeypoints(bitmap: Bitmap, results: List<DetectedObject> ):Bitmap {
-        val outputBitmap = visualizationUtils.drawKeypoints(bitmap,results)
+    override fun drawResultOnBitmap(bitmap: Bitmap):Bitmap {
+        val outputBitmap = visualizationUtils.drawKeypoints(bitmap,getResults())
         return outputBitmap
     }
 
-    /** Returns value within [0,1].   */
-    private fun sigmoid(x: Float): Float {
-        return (1.0f / (1.0f + exp(-x)))
-    }
-    //    https://stackoverflow.com/questions/10097891/inverse-logistic-function-reverse-sigmoid-function
-    /** Reverse sigmoid   */
-    private fun reverseSigmoid(x: Double): Double {
-        return Math.log(THRESHOLD / (1.0 - THRESHOLD))
-    }
+
     class VisualizationUtils {
         companion object {
             /** Radius of circle used to draw keypoints.  */

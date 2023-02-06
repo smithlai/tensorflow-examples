@@ -22,6 +22,7 @@ import android.os.SystemClock
 import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.examples.poseestimation.Utils
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.FaceCrop
 import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
@@ -151,7 +152,7 @@ class FaceMeshDetector(
 //            Log.e("aaaaa", keypointPositions[idx].toString())
         }
         val faceflag = faceflag_buffer[0][0][0][0]
-        val confidence = sigmoid(faceflag)
+        val confidence = Utils.sigmoid(faceflag)
         var facelist = mutableListOf<FaceMesh>()
         if (confidence>= THRESHOLD) {
             val face_crop = FaceCrop(
@@ -229,14 +230,11 @@ class FaceMeshDetector(
         }
         return outputMap
     }
-    override fun drawKeypoints(bitmap: Bitmap, results: List<FaceMesh> ): Bitmap {
-        val outputBitmap = visualizationUtils.drawKeypoints(bitmap,results)
+    override fun drawResultOnBitmap(bitmap: Bitmap): Bitmap {
+        val outputBitmap = visualizationUtils.drawKeypoints(bitmap, getResults())
         return outputBitmap
     }
-    /** Returns value within [0,1].   */
-    private fun sigmoid(x: Float): Float {
-        return (1.0f / (1.0f + exp(-x)))
-    }
+
     class VisualizationUtils {
         companion object {
             /** Radius of circle used to draw keypoints.  */

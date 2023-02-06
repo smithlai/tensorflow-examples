@@ -59,21 +59,15 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
             val mutableList = mutableListOf<Job>()
             for (detector in detector_list) {
                 when (detector) {
-//                        is EfficientDetector -> {
-//                            mutableList.add(launch {
-////                                Thread.sleep(300L)
-//                                object_list = detector?.inferenceImage(bitmap)
-////                                Log.e("aaaaxxxx", "1.${Thread.currentThread().name}"+": "+object_list?.size.toString())
-//                            })
-//                        }
-                    is ObjectDetector -> {
+
+                    is AbstractObjectDetector -> {
                         mutableList.add(launch {
 //                                Thread.sleep(300L)
                             object_list = detector?.requestInferenceImage(bitmap)
 //                            Log.e("aaaaxxxx", "2.${Thread.currentThread().name}"+": "+object_list?.size.toString())
                         })
                     }
-                    is PoseDetector -> {
+                    is AbstractPoseDetector -> {
                         mutableList.add(launch {
 //                                Thread.sleep(300L)
                             person_list = detector?.requestInferenceImage(bitmap)
@@ -110,10 +104,11 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
         }
     }
 
-    override fun drawKeypoints(bitmap: Bitmap, results: DashML ): Bitmap {
+    override fun drawResultOnBitmap(bitmap: Bitmap): Bitmap {
         var tmpbmp = bitmap
+//        val results: DashML = getResults()
         for(detector in detector_list) {
-            detector.drawKeypoints(bitmap)
+            detector.drawResultOnBitmap(bitmap)
         }
         return tmpbmp
     }

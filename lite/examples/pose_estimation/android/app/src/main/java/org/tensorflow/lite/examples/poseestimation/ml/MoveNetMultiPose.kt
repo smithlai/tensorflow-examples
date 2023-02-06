@@ -43,7 +43,7 @@ class MoveNetMultiPose(
     private val interpreter: Interpreter,
     private val type: Type,
     private val gpuDelegate: GpuDelegate?,
-) : PoseDetector(interpreter, gpuDelegate) {
+) : AbstractPoseDetector(interpreter, gpuDelegate) {
     private val outputShape = interpreter.getOutputTensor(0).shape()
     private val inputShape = interpreter.getInputTensor(0).shape()
     private var imageWidth: Int = 0
@@ -274,7 +274,7 @@ class MoveNetMultiPose(
         lastInferenceTimeNanos =
             SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
         Log.i(
-            PoseDetector.TAG,
+            AbstractPoseDetector.TAG,
             String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
         )
         return processedPerson

@@ -22,6 +22,7 @@ import android.os.SystemClock
 import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.examples.poseestimation.Utils
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.FaceCrop
 import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
@@ -76,7 +77,7 @@ class FaceCropDetector(
     private var cropWidth = 0f
     private var cropSize = 0
     private val reversedSigmoid by lazy<Float> {
-        reverseSigmoid(scoreThreshold.toDouble()).toFloat()
+        Utils.reverseSigmoid(scoreThreshold.toDouble()).toFloat()
     }
     private val visualizationUtils:VisualizationUtils = VisualizationUtils()
     private lateinit var ssdAnchor:List<Pair<Float,Float>>
@@ -146,7 +147,7 @@ class FaceCropDetector(
         // type: float32[1,2304,1]
         for (i in 0 until faceconfidence_buffer[0].size){
 
-            val confidence = sigmoid(faceconfidence_buffer[0][i][0])
+            val confidence = Utils.sigmoid(faceconfidence_buffer[0][i][0])
             // skip confidence < scoreThreshold
             if(confidence < scoreThreshold)
                 continue
@@ -220,22 +221,13 @@ class FaceCropDetector(
         }
         return outputMap
     }
-    override fun drawKeypoints(bitmap: Bitmap, results: List<FaceCrop> ): Bitmap {
+    override fun drawResultOnBitmap(bitmap: Bitmap): Bitmap {
 
-        val outputBitmap = visualizationUtils.drawKeypoints(bitmap,results)
+        val outputBitmap = visualizationUtils.drawKeypoints(bitmap,getResults())
 //        if (results.size > 0) {
 //            Log.e("bbbb", results.size.toString())
 //        }
         return outputBitmap
-    }
-    /** Returns value within [0,1].   */
-    private fun sigmoid(x: Float): Float {
-        return (1.0f / (1.0f + exp(-x)))
-    }
-    //    https://stackoverflow.com/questions/10097891/inverse-logistic-function-reverse-sigmoid-function
-    /** Reverse sigmoid   */
-    private fun reverseSigmoid(x: Double): Double {
-        return Math.log(scoreThreshold / (1.0 - scoreThreshold))
     }
 
     private fun overlap_similarity(box1: Pair<Pair<Float,Float>,Pair<Float,Float>>,box2: Pair<Pair<Float,Float>,Pair<Float,Float>>) : Float{

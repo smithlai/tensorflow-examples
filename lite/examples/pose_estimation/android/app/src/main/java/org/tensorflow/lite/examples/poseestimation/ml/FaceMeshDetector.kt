@@ -273,10 +273,10 @@ class FaceMeshDetector(
 
             val originalSizeCanvas = Canvas(output)
             results.forEach { facemesh ->
-                val tl = facemesh.facecrop.data.get(0)
+                val tl = facemesh.facecrop.data.get(FaceCrop.FaceCropPart.TL.position)
                 val x1 = tl.first
                 val y1 = tl.second
-                val br = facemesh.facecrop.data.get(1)
+                val br = facemesh.facecrop.data.get(FaceCrop.FaceCropPart.BR.position)
                 val x2 = br.first
                 val y2 = br.second
                 val w = x2- x1

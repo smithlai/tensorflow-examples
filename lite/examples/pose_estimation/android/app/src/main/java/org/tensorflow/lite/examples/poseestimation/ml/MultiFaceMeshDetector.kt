@@ -66,8 +66,8 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
         var facemeshes = mutableListOf<FaceMesh>()
         faceCropDetector.requestInferenceImage(bitmap).let{ croplist ->
             for (crop in croplist){
-                val tl = crop.data.get(0)
-                val br = crop.data.get(1)
+                val tl = crop.data.get(FaceCrop.FaceCropPart.TL.position)
+                val br = crop.data.get(FaceCrop.FaceCropPart.BR.position)
                 var x1 = tl.first
                 var y1 = tl.second
                 var x2 = br.first
@@ -88,8 +88,8 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
                 val face = Bitmap.createBitmap(bitmap, x1.toInt(),y1.toInt(), w.toInt(), h.toInt())
                 val tmpmesh = faceMeshDetector.requestInferenceImage(face)
                 val new_crop_points = crop.data.toMutableList()
-                new_crop_points[0] = Pair(x1,y1)
-                new_crop_points[1] = Pair(x2,y2)
+                new_crop_points[FaceCrop.FaceCropPart.TL.position] = Pair(x1,y1)
+                new_crop_points[FaceCrop.FaceCropPart.BR.position] = Pair(x2,y2)
                 tmpmesh.forEach {
                     it.facecrop = FaceCrop(new_crop_points,crop.score)
                 }

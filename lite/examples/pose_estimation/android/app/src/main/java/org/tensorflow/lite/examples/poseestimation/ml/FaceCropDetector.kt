@@ -23,10 +23,7 @@ import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.Utils
-import org.tensorflow.lite.examples.poseestimation.data.Device
-import org.tensorflow.lite.examples.poseestimation.data.FaceCrop
-import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
-import org.tensorflow.lite.examples.poseestimation.data.SSDAnchors
+import org.tensorflow.lite.examples.poseestimation.data.*
 import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
@@ -325,7 +322,7 @@ class FaceCropDetector(
                     )
                 }
                 originalSizeCanvas.drawText(
-                    facecrop.score.toString(),
+                    "    " + facecrop.score.toString(),
                     facecrop.data.get(0).first,
                     facecrop.data.get(0).second,
                     paintText

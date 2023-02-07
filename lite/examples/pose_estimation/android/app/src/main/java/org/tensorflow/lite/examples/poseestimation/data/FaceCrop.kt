@@ -1,6 +1,6 @@
 package org.tensorflow.lite.examples.poseestimation.data
 
-data class FaceCrop(val data:List<Pair<Float,Float>>, val score: Float) {
+data class FaceCrop(val data:List<Pair<Float,Float>> = listOf(), val score: Float = 0.0f) {
     enum class FaceCropPart(val position: Int) {
         TL(0),
         BR(1),

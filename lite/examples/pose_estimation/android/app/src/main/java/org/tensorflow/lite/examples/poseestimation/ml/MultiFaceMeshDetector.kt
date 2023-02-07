@@ -40,18 +40,15 @@ import kotlin.math.exp
 class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMeshDetector: FaceMeshDetector): AbstractDetector<List<FaceMesh>>() {
 
     companion object {
-        private const val MARGIN = 0.25f
+        private const val FACECROP_MARGIN = 0.25f
         private const val TAG = "MultiFaceMesh"
-//        https://google.github.io/mediapipe/solutions/models.html#face-mesh
-        private const val MODEL_FILENAME = "face_landmark.tflite"
-//        private const val MODEL_FILENAME = "face_landmark_with_attention.tflite"
 
         fun create(context: Context, device: Device): MultiFaceMeshDetector {
 //            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
 //            val options = settings.first
 //            var gpuDelegate = settings.second
             val faceCropDetector = FaceCropDetector.create(context, device)
-            val faceMeshDetector = FaceMeshDetector.create(context, device)
+            val faceMeshDetector = FaceMeshDetector.create(context, device, true)
             return MultiFaceMeshDetector(
                 faceCropDetector, faceMeshDetector
             )
@@ -77,8 +74,8 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
                 var w = x2 - x1
                 var h = y2 - y1
                 // re-calc margin
-                val newW2 = w*(1+MARGIN)/2
-                val newH2 = h*(1+MARGIN)/2
+                val newW2 = w*(1 + FACECROP_MARGIN)/2
+                val newH2 = h*(1 + FACECROP_MARGIN)/2
                 x1 = max(0f, center_x - newW2)
                 y1 = max(0f, center_y - newH2)
                 x2 = min(bitmap.width.toFloat(), center_x + newW2)

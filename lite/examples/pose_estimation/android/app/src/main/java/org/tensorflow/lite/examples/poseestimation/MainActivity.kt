@@ -369,7 +369,7 @@ class MainActivity : AppCompatActivity() {
                 showPoseClassifier(false)
                 showDetectionScore(false)
                 showTracker(false)
-                FaceMeshDetector.create(this, device)
+                FaceMeshDetector.create(this, device, true)
             }
             9->{
                 showPoseClassifier(false)

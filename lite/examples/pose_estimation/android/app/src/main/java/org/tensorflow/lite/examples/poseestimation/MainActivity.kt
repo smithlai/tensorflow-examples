@@ -281,9 +281,10 @@ class MainActivity : AppCompatActivity() {
     // Change device (accelerator) type when app is running
     private fun changeDevice(position: Int) {
         val targetDevice = when (position) {
-            0 -> Device.CPU
             1 -> Device.GPU
-            else -> Device.NNAPI
+            2 -> Device.NNAPI
+            3 -> Device.HEXGON
+            else -> Device.CPU
         }
         if (device == targetDevice) return
         device = targetDevice
@@ -369,7 +370,7 @@ class MainActivity : AppCompatActivity() {
                 showPoseClassifier(false)
                 showDetectionScore(false)
                 showTracker(false)
-                FaceMeshDetector.create(this, device, true)
+                FaceMeshDetector.create(this, device, false)
             }
             9->{
                 showPoseClassifier(false)

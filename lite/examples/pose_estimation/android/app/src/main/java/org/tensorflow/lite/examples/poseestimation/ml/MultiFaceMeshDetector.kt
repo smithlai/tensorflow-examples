@@ -48,7 +48,7 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
 //            val options = settings.first
 //            var gpuDelegate = settings.second
             val faceCropDetector = FaceCropDetector.create(context, device)
-            val faceMeshDetector = FaceMeshDetector.create(context, device, true)
+            val faceMeshDetector = FaceMeshDetector.create(context, device, false)
             return MultiFaceMeshDetector(
                 faceCropDetector, faceMeshDetector
             )

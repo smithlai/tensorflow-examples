@@ -37,8 +37,8 @@ import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
 import kotlin.math.exp
 
-class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: GpuDelegate?) :
-    AbstractPoseDetector(interpreter, gpuDelegate) {
+class PoseNet(private val interpreter: Interpreter, private val interopt: Interpreter.Options) :
+    AbstractPoseDetector(interpreter, interopt) {
 
     companion object {
         private const val CPU_NUM_THREADS = 4
@@ -48,9 +48,7 @@ class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
         private const val MODEL_FILENAME = "posenet.tflite"
 
         fun create(context: Context, device: Device): PoseNet {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
-            val options = settings.first
-            var gpuDelegate = settings.second
+            val options = AbstractDetector.getOption(device, context)
 
             return PoseNet(
                 Interpreter(
@@ -59,7 +57,7 @@ class PoseNet(private val interpreter: Interpreter, private var gpuDelegate: Gpu
                         MODEL_FILENAME
                     ), options
                 ),
-                gpuDelegate
+                options
             )
         }
     }

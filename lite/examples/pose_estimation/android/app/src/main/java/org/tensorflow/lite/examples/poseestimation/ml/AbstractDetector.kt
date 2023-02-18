@@ -16,30 +16,47 @@ limitations under the License.
 
 package org.tensorflow.lite.examples.poseestimation.ml
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
+import org.tensorflow.lite.HexagonDelegate
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.Device
+import org.tensorflow.lite.gpu.CompatibilityList
 import org.tensorflow.lite.gpu.GpuDelegate
 
 abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
     companion object {
-        protected const val CPU_NUM_THREADS = 4
-        fun getOption(device: Device): Pair<Interpreter.Options, GpuDelegate?>{
+        protected const val CPU_NUM_THREADS = 1
+        fun getOption(device: Device, context: Context): Interpreter.Options{
             val options = Interpreter.Options()
-            var gpuDelegate: GpuDelegate? = null
-            options.setNumThreads(CPU_NUM_THREADS)
+
+
             when (device) {
                 Device.CPU -> {
+                    options.setNumThreads(CPU_NUM_THREADS)
                 }
                 Device.GPU -> {
-                    gpuDelegate = GpuDelegate()
+                    var gpuDelegate: GpuDelegate? = null
+                    val compatList = CompatibilityList()
+                    if(compatList.isDelegateSupportedOnThisDevice) {
+                        // if the device has a supported GPU, add the GPU delegate
+                        val delegateOptions = compatList.bestOptionsForThisDevice
+                        gpuDelegate = GpuDelegate(delegateOptions)
+                    }else{
+                        gpuDelegate = GpuDelegate()
+                        throw Exception("GPU not supported on this devices")
+                    }
                     options.addDelegate(gpuDelegate)
                 }
                 Device.NNAPI -> options.setUseNNAPI(true)
+                Device.HEXGON -> {
+                    val hexagonDelegate = HexagonDelegate(context)
+                    options.addDelegate(hexagonDelegate);
+                }
             }
-            return Pair(options, gpuDelegate)
+            return options
         }
     }
     abstract protected var inference_results: DetectionResultT

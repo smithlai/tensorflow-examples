@@ -36,7 +36,7 @@ import java.lang.Float.min
 class FaceMeshDetector(
     private val interpreter: Interpreter,
     private val irisDetector: LeftIrisDetector?,
-    private var gpuDelegate: GpuDelegate?): AbstractDetector<List<FaceMesh>>() {
+    private val interopt: Interpreter.Options): AbstractDetector<List<FaceMesh>>() {
 
     companion object {
         private const val MEAN = 127.5f
@@ -51,9 +51,7 @@ class FaceMeshDetector(
 
 
         fun create(context: Context, device: Device, iris: Boolean): FaceMeshDetector {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
-            val options = settings.first
-            var gpuDelegate = settings.second
+            val options = AbstractDetector.getOption(device, context)
             val attention = false
             return FaceMeshDetector(
                 Interpreter(
@@ -63,7 +61,7 @@ class FaceMeshDetector(
                     ), options
                 ),
                 if (iris) LeftIrisDetector.create(context, device) else null,
-                gpuDelegate
+                options
             )
         }
     }
@@ -314,8 +312,12 @@ class FaceMeshDetector(
 
     override fun lastInferenceTimeNanos(): Long = lastInferenceTimeNanos
     override fun close() {
-        gpuDelegate?.close()
         interpreter.close()
+        interopt.delegates.forEach {
+            it.close()
+        }
+//        gpuDelegate?.close()
+//        gpuDelegate = null
         irisDetector?.close()
     }
 

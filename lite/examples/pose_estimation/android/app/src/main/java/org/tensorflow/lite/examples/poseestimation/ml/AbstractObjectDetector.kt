@@ -37,7 +37,7 @@ import kotlin.math.exp
 
 abstract class AbstractObjectDetector(
     private val interpreter: Interpreter,
-    private var gpuDelegate: GpuDelegate?): AbstractDetector<List<DetectedObject>>() {
+    private val interopt: Interpreter.Options): AbstractDetector<List<DetectedObject>>() {
 
     companion object {
         private const val MEAN = 127.5f
@@ -139,8 +139,12 @@ abstract class AbstractObjectDetector(
 
     override fun lastInferenceTimeNanos(): Long = lastInferenceTimeNanos
     override fun close() {
-        gpuDelegate?.close()
         interpreter.close()
+        interopt.delegates.forEach {
+            it.close()
+        }
+//        gpuDelegate?.close()
+//        gpuDelegate = null
     }
 
     /**

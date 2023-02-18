@@ -24,7 +24,7 @@ import org.tensorflow.lite.support.common.FileUtil
 
 class MobilenetDetector(
     private val interpreter: Interpreter,
-    private var gpuDelegate: GpuDelegate?): AbstractObjectDetector(interpreter, gpuDelegate) {
+    private val interopt: Interpreter.Options): AbstractObjectDetector(interpreter, interopt) {
 
     companion object {
         private const val MEAN = 127.5f
@@ -37,9 +37,7 @@ class MobilenetDetector(
         private const val MODEL_FILENAME = "mobilenetv1.tflite"
 
         fun create(context: Context, device: Device): MobilenetDetector {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
-            val options = settings.first
-            var gpuDelegate = settings.second
+            val options = AbstractDetector.getOption(device, context)
 
             return MobilenetDetector(
                 Interpreter(
@@ -48,7 +46,7 @@ class MobilenetDetector(
                         MODEL_FILENAME
                     ), options
                 ),
-                gpuDelegate
+                options
             )
         }
     }

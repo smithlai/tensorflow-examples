@@ -37,7 +37,7 @@ import kotlin.math.exp
 
 class LeftIrisDetector(
     private val interpreter: Interpreter,
-    private var gpuDelegate: GpuDelegate?): AbstractDetector<IrisMesh>() {
+    private val interopt: Interpreter.Options): AbstractDetector<IrisMesh>() {
 
     companion object {
         private const val MEAN = 127.5f
@@ -49,9 +49,7 @@ class LeftIrisDetector(
         private const val MODEL_FILENAME = "iris_landmark.tflite"
 
         fun create(context: Context, device: Device): LeftIrisDetector {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
-            val options = settings.first
-            var gpuDelegate = settings.second
+            val options = AbstractDetector.getOption(device, context)
 
             return LeftIrisDetector(
                 Interpreter(
@@ -60,7 +58,7 @@ class LeftIrisDetector(
                         MODEL_FILENAME
                     ), options
                 ),
-                gpuDelegate
+                options
             )
         }
     }
@@ -149,8 +147,12 @@ class LeftIrisDetector(
 
     override fun lastInferenceTimeNanos(): Long = lastInferenceTimeNanos
     override fun close() {
-        gpuDelegate?.close()
         interpreter.close()
+        interopt.delegates.forEach {
+            it.close()
+        }
+//        gpuDelegate?.close()
+//        gpuDelegate = null
     }
 
     /**

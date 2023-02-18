@@ -48,10 +48,10 @@ class PoseClassifierTest {
         val input = EvaluationUtils.loadBitmapAssetByName(TEST_INPUT_IMAGE)
         // As Movenet use previous frame to optimize detection result, we run it multiple times
         // using the same image to improve result.
-        poseDetector.inferenceImage(input)
-        poseDetector.inferenceImage(input)
-        poseDetector.inferenceImage(input)
-        val person = poseDetector.inferenceImage(input)[0]
+        poseDetector.requestInferenceImage(input)
+        poseDetector.requestInferenceImage(input)
+        poseDetector.requestInferenceImage(input)
+        val person = poseDetector.requestInferenceImage(input)[0]
         val classificationResult = poseClassifier.classify(person)
         val predictedPose = classificationResult.maxByOrNull { it.second }?.first ?: "n/a"
         assertEquals(

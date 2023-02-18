@@ -38,7 +38,7 @@ import kotlin.math.exp
 
 class FaceCropDetector(
     private val interpreter: Interpreter,
-    private var gpuDelegate: GpuDelegate?): AbstractDetector<List<FaceCrop>>() {
+    private val interopt: Interpreter.Options): AbstractDetector<List<FaceCrop>>() {
 
     companion object {
         private const val MEAN = 127.5f
@@ -51,9 +51,7 @@ class FaceCropDetector(
         private const val MODEL_FILENAME = "face_detection_back.tflite"
 
         fun create(context: Context, device: Device): FaceCropDetector {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
-            val options = settings.first
-            var gpuDelegate = settings.second
+            val options = AbstractDetector.getOption(device, context)
 
             return FaceCropDetector(
                 Interpreter(
@@ -62,7 +60,7 @@ class FaceCropDetector(
                         MODEL_FILENAME
                     ), options
                 ),
-                gpuDelegate
+                options
             )
         }
     }
@@ -162,8 +160,12 @@ class FaceCropDetector(
 
     override fun lastInferenceTimeNanos(): Long = lastInferenceTimeNanos
     override fun close() {
-        gpuDelegate?.close()
         interpreter.close()
+        interopt.delegates.forEach {
+            it.close()
+        }
+//        gpuDelegate?.close()
+//        gpuDelegate = null
     }
 
     /**

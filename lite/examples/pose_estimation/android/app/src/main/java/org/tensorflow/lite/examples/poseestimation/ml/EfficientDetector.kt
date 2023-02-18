@@ -24,7 +24,7 @@ import org.tensorflow.lite.support.common.FileUtil
 
 class EfficientDetector(
     private val interpreter: Interpreter,
-    private var gpuDelegate: GpuDelegate?): AbstractObjectDetector(interpreter, gpuDelegate) {
+    private val interopt: Interpreter.Options): AbstractObjectDetector(interpreter, interopt) {
 
     companion object {
         private const val MEAN = 127.5f
@@ -36,9 +36,7 @@ class EfficientDetector(
         private const val MODEL_FILENAME = "efficientdet-lite0.tflite"
 
         fun create(context: Context, device: Device): EfficientDetector {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
-            val options = settings.first
-            var gpuDelegate = settings.second
+            val options = AbstractDetector.getOption(device, context)
 
             return EfficientDetector(
                 Interpreter(
@@ -47,7 +45,7 @@ class EfficientDetector(
                         MODEL_FILENAME
                     ), options
                 ),
-                gpuDelegate
+                options
             )
         }
     }

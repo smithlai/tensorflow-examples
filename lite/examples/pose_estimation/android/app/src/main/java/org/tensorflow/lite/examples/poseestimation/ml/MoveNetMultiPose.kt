@@ -42,8 +42,8 @@ import kotlin.math.ceil
 class MoveNetMultiPose(
     private val interpreter: Interpreter,
     private val type: Type,
-    private val gpuDelegate: GpuDelegate?,
-) : AbstractPoseDetector(interpreter, gpuDelegate) {
+    private val interopt: Interpreter.Options,
+) : AbstractPoseDetector(interpreter, interopt) {
     private val outputShape = interpreter.getOutputTensor(0).shape()
     private val inputShape = interpreter.getInputTensor(0).shape()
     private var imageWidth: Int = 0
@@ -74,9 +74,7 @@ class MoveNetMultiPose(
             device: Device,
             type: Type,
         ): MoveNetMultiPose {
-            val settings: Pair<Interpreter.Options, GpuDelegate?> = AbstractDetector.getOption(device)
-            val options = settings.first
-            var gpuDelegate = settings.second
+            val options = AbstractDetector.getOption(device, context)
 
             return MoveNetMultiPose(
                 Interpreter(
@@ -86,7 +84,7 @@ class MoveNetMultiPose(
                             "movenet_multipose_fp16.tflite" else ""
                         //@TODO: (khanhlvg) Add support for fixed shape model if it's released.
                     ), options
-                ), type, gpuDelegate
+                ), type, options
             )
         }
     }

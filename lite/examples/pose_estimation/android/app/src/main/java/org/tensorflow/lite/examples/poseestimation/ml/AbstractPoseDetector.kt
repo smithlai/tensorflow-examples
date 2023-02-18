@@ -31,7 +31,7 @@ import kotlin.math.max
 
 abstract class AbstractPoseDetector(
     private val interpreter: Interpreter,
-    private var gpuDelegate: GpuDelegate?) : AbstractDetector<List<Person>>() {
+    private val interopt: Interpreter.Options) : AbstractDetector<List<Person>>() {
     companion object {
         const val TAG = "PoseDetector"
         private const val MIN_CONFIDENCE = .2f
@@ -69,8 +69,10 @@ abstract class AbstractPoseDetector(
     }
 
     override fun close() {
-        gpuDelegate?.close()
         interpreter.close()
+        interopt.delegates.forEach {
+            it.close()
+        }
         classifier?.close()
         classifier = null
     }

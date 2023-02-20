@@ -22,6 +22,7 @@ import android.app.Dialog
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Process
+import android.util.Log
 import android.view.SurfaceView
 import android.view.View
 import android.view.WindowManager
@@ -132,6 +133,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+//        val libraryPath = applicationInfo.nativeLibraryDir
+        Log.e("aaaa", applicationInfo.nativeLibraryDir)
+        this.applicationInfo.nativeLibraryDir.plus("/data/local/tmp")
+        this.applicationInfo.nativeLibraryDir
+        Log.e("bbb", applicationInfo.nativeLibraryDir)
+//        val oldLdLibraryPath = System.getProperty("java.library.path")
+//        Log.e("aaaa", applicationInfo.nativeLibraryDir)
+//        val newLdLibraryPath = "/data/local/tmp:$libraryPath:$oldLdLibraryPath"
+//        System.setProperty("java.library.path", newLdLibraryPath)
         setContentView(R.layout.activity_main)
         // keep screen on while app is running
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

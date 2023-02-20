@@ -20,6 +20,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
+import android.os.SystemClock
 import android.util.Log
 import org.tensorflow.lite.HexagonDelegate
 import org.tensorflow.lite.Interpreter
@@ -29,7 +30,7 @@ import org.tensorflow.lite.gpu.GpuDelegate
 
 abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
     companion object {
-        const val ifPrintInference = false
+        const val printInferenceIntervalNanos = 1_000_000_000
         const val CPU_NUM_THREADS = 1
 
         fun getOption(device: Device, context: Context): Interpreter.Options{
@@ -41,6 +42,9 @@ abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
                     options.setNumThreads(CPU_NUM_THREADS)
                 }
                 Device.GPU -> {
+                    // Remember to copy the shared library to your app,
+                    // and set jniLib options in gradle.build
+                    // https://www.tensorflow.org/lite/android/delegates/hexagon
                     var gpuDelegate: GpuDelegate? = null
                     val compatList = CompatibilityList()
                     if(compatList.isDelegateSupportedOnThisDevice) {
@@ -63,9 +67,15 @@ abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
         }
 
     }
+    private var lastPrintInferenceTimeNanos:Long = 0
+
     fun printInferenceTime(tag: String){
-        if (ifPrintInference) {
-            Log.i(tag,String.format("Interpreter took %.2f ms",1.0f * lastInferenceTimeNanos() / 1_000_000))
+        if (printInferenceIntervalNanos > 0){
+            val elapse = SystemClock.elapsedRealtimeNanos() - lastPrintInferenceTimeNanos
+            if (elapse > printInferenceIntervalNanos) {
+                Log.i(tag,String.format("Interpreter took %.2f ms",1.0f * lastInferenceTimeNanos() / 1_000_000))
+                lastPrintInferenceTimeNanos = SystemClock.elapsedRealtimeNanos()
+            }
         }
     }
 

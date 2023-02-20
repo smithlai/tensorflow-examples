@@ -30,6 +30,22 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+
+
+    packagingOptions {
+        jniLibs {
+            // Gradle version 7.4, plugin 7.2.1
+            // with this, apk will copy *.so into /data/app/<APP>/lib/arm64
+            useLegacyPackaging = true
+        }
+    }
+    sourceSets {
+        main {
+            jni {
+                srcDirs ['src/main/jniLibs/',]
+            }
+        }
+    }
 }
 
 // Download tflite model

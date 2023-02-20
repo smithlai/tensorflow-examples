@@ -19,22 +19,17 @@ package org.tensorflow.lite.examples.poseestimation.ml
 import android.content.Context
 import android.graphics.*
 import android.os.SystemClock
-import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.Utils
 import org.tensorflow.lite.examples.poseestimation.data.*
-import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
-import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
 import java.lang.Float.min
-import java.lang.Math.log
 import java.lang.Float.max
-import kotlin.math.exp
 
 class FaceCropDetector(
     private val interpreter: Interpreter,
@@ -81,25 +76,22 @@ class FaceCropDetector(
     }
     @Suppress("UNCHECKED_CAST")
     override fun inferenceImage(bitmap: Bitmap): List<FaceCrop> {
-        val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
+//        val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val inputArray = arrayOf(processInputImage(bitmap).tensorBuffer.buffer)
-        Log.i(
-            TAG,
-            String.format(
-                "Scaling to [-1,1] took %.2f ms",
-                (SystemClock.elapsedRealtimeNanos() - estimationStartTimeNanos) / 1_000_000f
-            )
-        )
+//        Log.i(
+//            TAG,
+//            String.format(
+//                "Scaling to [-1,1] took %.2f ms",
+//                (SystemClock.elapsedRealtimeNanos() - estimationStartTimeNanos) / 1_000_000f
+//            )
+//        )
 
         val outputMap = initOutputMap(interpreter)
 
         val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         interpreter.runForMultipleInputsOutputs(inputArray, outputMap)
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.i(
-            TAG,
-            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
-        )
+        printInferenceTime(TAG)
 
         val anchors_buffer = outputMap[0] as Array<Array<FloatArray>>
         val faceconfidence_buffer = outputMap[1] as Array<Array<FloatArray>>
@@ -110,13 +102,13 @@ class FaceCropDetector(
             faceconfidence_buffer)
         val prine_facecrops = NMS(facecrops, scoreThreshold, nmsThreshold)
 
-        Log.i(
-            TAG,
-            String.format(
-                "Postprocessing took %.2f ms",
-                (SystemClock.elapsedRealtimeNanos() - postProcessingStartTimeNanos) / 1_000_000f
-            )
-        )
+//        Log.i(
+//            TAG,
+//            String.format(
+//                "Postprocessing took %.2f ms",
+//                (SystemClock.elapsedRealtimeNanos() - postProcessingStartTimeNanos) / 1_000_000f
+//            )
+//        )
 
         return prine_facecrops
     }

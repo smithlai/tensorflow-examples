@@ -19,23 +19,11 @@ package org.tensorflow.lite.examples.poseestimation.ml
 import android.content.Context
 import android.graphics.*
 import android.os.SystemClock
-import android.util.Log
-import org.tensorflow.lite.DataType
-import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.FaceCrop
 import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
-import org.tensorflow.lite.examples.poseestimation.data.Person
-import org.tensorflow.lite.gpu.GpuDelegate
-import org.tensorflow.lite.support.common.FileUtil
-import org.tensorflow.lite.support.common.ops.NormalizeOp
-import org.tensorflow.lite.support.image.ImageProcessor
-import org.tensorflow.lite.support.image.TensorImage
-import org.tensorflow.lite.support.image.ops.ResizeOp
-import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
 import java.lang.Float.max
 import java.lang.Float.min
-import kotlin.math.exp
 
 class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMeshDetector: FaceMeshDetector): AbstractDetector<List<FaceMesh>>() {
 
@@ -94,10 +82,7 @@ class MultiFaceMeshDetector(val faceCropDetector: FaceCropDetector, val faceMesh
             }
         }
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.i(
-            TAG,
-            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
-        )
+        printInferenceTime(TAG)
 //        Log.e(
 //            TAG, "facemeshes.size: " + facemeshes.size.toString()
 //        )

@@ -20,6 +20,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
+import android.util.Log
 import org.tensorflow.lite.HexagonDelegate
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.Device
@@ -28,7 +29,9 @@ import org.tensorflow.lite.gpu.GpuDelegate
 
 abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
     companion object {
-        protected const val CPU_NUM_THREADS = 1
+        const val ifPrintInference = false
+        const val CPU_NUM_THREADS = 1
+
         fun getOption(device: Device, context: Context): Interpreter.Options{
             val options = Interpreter.Options()
 
@@ -58,7 +61,14 @@ abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
             }
             return options
         }
+
     }
+    fun printInferenceTime(tag: String){
+        if (ifPrintInference) {
+            Log.i(tag,String.format("Interpreter took %.2f ms",1.0f * lastInferenceTimeNanos() / 1_000_000))
+        }
+    }
+
     abstract protected var inference_results: DetectionResultT
     fun getResults(): DetectionResultT{
         return inference_results

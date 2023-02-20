@@ -16,24 +16,15 @@ limitations under the License.
 
 package org.tensorflow.lite.examples.poseestimation.ml
 
-import android.content.Context
 import android.graphics.*
 import android.os.SystemClock
-import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.Utils
 import org.tensorflow.lite.examples.poseestimation.data.DetectedObject
-import org.tensorflow.lite.examples.poseestimation.data.Device
-import org.tensorflow.lite.examples.poseestimation.data.FaceMesh
-import org.tensorflow.lite.gpu.GpuDelegate
-import org.tensorflow.lite.support.common.FileUtil
-import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
-import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
-import kotlin.math.exp
 
 abstract class AbstractObjectDetector(
     private val interpreter: Interpreter,
@@ -97,10 +88,8 @@ abstract class AbstractObjectDetector(
 //            )
 //        )
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.i(
-            TAG,
-            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
-        )
+
+        printInferenceTime(TAG)
         return detected_list
     }
 

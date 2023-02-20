@@ -20,7 +20,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.PointF
 import android.os.SystemClock
-import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.Utils
@@ -28,14 +27,12 @@ import org.tensorflow.lite.examples.poseestimation.data.BodyPart
 import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.KeyPoint
 import org.tensorflow.lite.examples.poseestimation.data.Person
-import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
-import kotlin.math.exp
 
 class PoseNet(private val interpreter: Interpreter, private val interopt: Interpreter.Options) :
     AbstractPoseDetector(interpreter, interopt) {
@@ -73,36 +70,33 @@ class PoseNet(private val interpreter: Interpreter, private val interopt: Interp
     override fun inferenceImage(bitmap: Bitmap): List<Person> {
         val estimationStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val inputArray = arrayOf(processInputImage(bitmap).tensorBuffer.buffer)
-        Log.i(
-            TAG,
-            String.format(
-                "Scaling to [-1,1] took %.2f ms",
-                (SystemClock.elapsedRealtimeNanos() - estimationStartTimeNanos) / 1_000_000f
-            )
-        )
+//        Log.i(
+//            TAG,
+//            String.format(
+//                "Scaling to [-1,1] took %.2f ms",
+//                (SystemClock.elapsedRealtimeNanos() - estimationStartTimeNanos) / 1_000_000f
+//            )
+//        )
 
         val outputMap = initOutputMap(interpreter)
 
         val inferenceStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         interpreter.runForMultipleInputsOutputs(inputArray, outputMap)
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.i(
-            TAG,
-            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
-        )
+        printInferenceTime(TAG)
 
         val heatmaps = outputMap[0] as Array<Array<Array<FloatArray>>>
         val offsets = outputMap[1] as Array<Array<Array<FloatArray>>>
 
         val postProcessingStartTimeNanos = SystemClock.elapsedRealtimeNanos()
         val person = postProcessModelOuputs(heatmaps, offsets)
-        Log.i(
-            TAG,
-            String.format(
-                "Postprocessing took %.2f ms",
-                (SystemClock.elapsedRealtimeNanos() - postProcessingStartTimeNanos) / 1_000_000f
-            )
-        )
+//        Log.i(
+//            TAG,
+//            String.format(
+//                "Postprocessing took %.2f ms",
+//                (SystemClock.elapsedRealtimeNanos() - postProcessingStartTimeNanos) / 1_000_000f
+//            )
+//        )
 
         return listOf(person)
     }

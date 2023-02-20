@@ -21,7 +21,6 @@ import android.graphics.Bitmap
 import android.graphics.PointF
 import android.graphics.RectF
 import android.os.SystemClock
-import android.util.Log
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.examples.poseestimation.data.BodyPart
@@ -29,7 +28,6 @@ import org.tensorflow.lite.examples.poseestimation.data.Device
 import org.tensorflow.lite.examples.poseestimation.data.KeyPoint
 import org.tensorflow.lite.examples.poseestimation.data.Person
 import org.tensorflow.lite.examples.poseestimation.tracker.*
-import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.image.ImageOperator
 import org.tensorflow.lite.support.image.ImageProcessor
@@ -271,10 +269,7 @@ class MoveNetMultiPose(
         val processedPerson = postProcess(outputTensor.floatArray)
         lastInferenceTimeNanos =
             SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.i(
-            AbstractPoseDetector.TAG,
-            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
-        )
+        printInferenceTime(TAG)
         return processedPerson
     }
 

@@ -19,7 +19,6 @@ package org.tensorflow.lite.examples.poseestimation.ml
 import android.content.Context
 import android.graphics.Bitmap
 import android.os.SystemClock
-import android.util.Log
 import kotlinx.coroutines.*
 import org.tensorflow.lite.examples.poseestimation.data.*
 
@@ -89,10 +88,7 @@ class DashMLDetector(val detector_list: List<AbstractDetector<*>>): AbstractDete
 
         }
         lastInferenceTimeNanos = SystemClock.elapsedRealtimeNanos() - inferenceStartTimeNanos
-        Log.i(
-            TAG,
-            String.format("Interpreter took %.2f ms", 1.0f * lastInferenceTimeNanos / 1_000_000)
-        )
+        printInferenceTime(TAG)
         return DashML(person_list, object_list, face_list)
     }
 

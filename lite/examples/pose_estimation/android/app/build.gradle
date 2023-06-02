@@ -36,6 +36,7 @@ android {
         jniLibs {
             // Gradle version 7.4, plugin 7.2.1
             // with this, apk will copy *.so into /data/app/<APP>/lib/arm64
+            // https://stackoverflow.com/questions/70479205/missing-so-file-lib-when-building-in-app-bundle
             useLegacyPackaging = true
         }
     }

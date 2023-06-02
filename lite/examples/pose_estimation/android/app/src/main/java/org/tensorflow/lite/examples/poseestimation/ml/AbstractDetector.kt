@@ -30,7 +30,7 @@ import org.tensorflow.lite.gpu.GpuDelegate
 
 abstract class AbstractDetector<DetectionResultT> : AutoCloseable {
     companion object {
-        const val printInferenceIntervalNanos = 1_000_000_000
+        const val printInferenceIntervalNanos = 2_000_000_000
         const val CPU_NUM_THREADS = 1
 
         fun getOption(device: Device, context: Context): Interpreter.Options{

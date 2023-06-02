@@ -1,3 +1,33 @@
+## Trouble shooting:
+
+   > Could not initialize class org.jetbrains.kotlin.com.intellij.pom.java.LanguageLevel....  
+   
+   This appears while JDK upgrade from 11 to 17, and kotlin version 1.4.32.
+   This might be a java / kotlin incompact bug : https://stackoverflow.com/questions/68242548/kotlin-internal-error-java-lang-noclassdeffounderror-could-not-initialize-cl
+
+
+   In this situation, I update kotlin to version 1.9.0-Beta to solve this problem
+
+   > The option setting 'android.bundle.enableUncompressedNativeLibs=false' is deprecated.  
+   
+   * Make *.so available in /data/app/<APP>/lib/arm64 for Hexagon
+   Modify gradle.properties to build.gradle
+
+   ```
+   The option setting 'android.bundle.enableUncompressedNativeLibs=false' is deprecated.
+   The current default is 'true'.
+
+   It will be removed in version 8.0 of the Android Gradle plugin.
+   You can add the following to your build.gradle instead:
+   android {
+      packagingOptions {
+         jniLibs {
+               useLegacyPackaging = true
+         }
+      }
+   }
+   ```
+
 # TensorFlow Lite Pose Estimation Android Demo
 
 ### Overview
